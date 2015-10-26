@@ -27,7 +27,7 @@ mako()
 
 Create a new plugin instance, with the following `options` available:
 
- - `root` the root for the project, urls will be set relative to here (default: `pwd`)
+ - `root` the root for the project, paths will be set relative to here (default: `pwd`)
 
 ## Dependencies
 
