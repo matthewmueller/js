@@ -3,6 +3,11 @@
 > A mako plugin that bundles a collection of JS files into a single output file.
 (example: [duo](http://duojs.org/), [browserify](http://browserify.org/))
 
+[![npm version](https://img.shields.io/npm/v/mako-js.svg)](https://www.npmjs.com/package/mako-js)
+[![npm dependencies](https://img.shields.io/david/makojs/js.svg)](https://david-dm.org/makojs/js)
+[![npm dev dependencies](https://img.shields.io/david/dev/makojs/js.svg)](https://david-dm.org/makojs/js#info=devDependencies)
+[![build status](https://img.shields.io/travis/makojs/js.svg)](https://travis-ci.org/makojs/js)
+
 ## Usage
 
 ```js
