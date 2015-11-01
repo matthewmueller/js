@@ -33,7 +33,7 @@ module.exports = function (options) {
    * @param {File} file  The current file being processed.
    */
   function json(file) {
-    file.contents = `module.exports = ${file.contents}`;
+    file.contents = 'module.exports = ' + file.contents + ';';
   }
 
   /**
