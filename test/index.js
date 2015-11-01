@@ -76,5 +76,5 @@ describe('js plugin', function () {
  * @return {*}
  */
 function exec(code) {
-  return vm.runInNewContext(`${code}(1)`);
+  return vm.runInNewContext(code + '(1)');
 }
