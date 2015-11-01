@@ -20,7 +20,6 @@ module.exports = function (options) {
   let config = defaults(options, { root: process.cwd() });
 
   return function (mako) {
-    mako.extensions('js', [ 'js', 'json' ]);
     mako.postread('json', json);
     mako.postread([ 'js', 'json' ], relative);
     mako.dependencies('js', npm);
@@ -55,11 +54,8 @@ module.exports = function (options) {
    * @param {Builder} mako  The mako builder instance.
    * @return {Promise}
    */
-  function npm(file, tree, mako) {
+  function npm(file) {
     let basedir = path.dirname(file.path);
-    let extensions = mako.extensions('js').map(function (ext) {
-      return `.${ext}`;
-    });
 
     file.deps = Object.create(null);
     if (file.isEntry()) file.mapping = Object.create(null);
@@ -68,7 +64,7 @@ module.exports = function (options) {
       return new Promise(function (accept, reject) {
         let options = {
           basedir: basedir,
-          extensions: extensions
+          extensions: [ '.js', '.json' ]
         };
 
         resolve(dep, options, function (err, res, pkg) {
@@ -92,19 +88,17 @@ module.exports = function (options) {
    */
   function combine(file, tree) {
     // add to the mapping for any linked entry files
-    tree.getEntries()
-      .filter(function (entry) {
-        return file.path === entry || tree.graph.hasPath(file.path, entry);
-      })
-      .forEach(function (entry) {
-        tree.getFile(entry).mapping[file.id] = prepare(file);
-      });
+    tree.getEntries(file.path).forEach(function (entry) {
+      tree.getFile(entry).mapping[file.id] = prepare(file);
+    });
 
     // remove these dependency links
-    file.dependants()
-      .forEach(function (parent) {
-        tree.removeDependency(parent, file.path);
-      });
+    file.dependants().forEach(function (parent) {
+      tree.removeDependency(parent, file.path);
+    });
+
+    // only leave the entry files behind
+    if (!file.isEntry()) tree.removeFile(file.path);
   }
 
   /**
