@@ -69,6 +69,12 @@ describe('js plugin', function () {
   });
 });
 
+/**
+ * Executes the given code, returning it's return value.
+ *
+ * @param {String} code  The source code to run. (ie: the result of a build)
+ * @return {*}
+ */
 function exec(code) {
   return vm.runInNewContext(`${code}(1)`);
 }
