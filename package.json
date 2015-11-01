@@ -3,11 +3,15 @@
   "version": "0.0.1",
   "description": "a mako plugin for assembling js files",
   "repository": "makojs/js",
+  "license": "MIT",
   "dependencies": {
     "defaults": "^1.0.3",
     "duo-pack": "^3.0.5",
     "file-deps": "0.0.7",
     "resolve": "^1.1.6"
+  },
+  "peerDependencies": {
+    "mako": "^0.2.0"
   },
   "devDependencies": {
     "@dominicbarnes/eslint-config": "*",
