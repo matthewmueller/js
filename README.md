@@ -1,7 +1,6 @@
 # mako-js
 
-> A mako plugin that bundles a collection of JS files into a single output file.
-(example: [duo](http://duojs.org/), [browserify](http://browserify.org/))
+> A mako plugin for working with JS, using npm as a package manager.
 
 [![npm version](https://img.shields.io/npm/v/mako-js.svg)](https://www.npmjs.com/package/mako-js)
 [![npm dependencies](https://img.shields.io/david/makojs/js.svg)](https://david-dm.org/makojs/js)
@@ -10,19 +9,29 @@
 
 ## Usage
 
+This plugin allows writing JS in such a way that it can be consumed by both Node and the browser.
+(in many ways, this mirrors the functionality of [Browserify](http://browserify.org/), but it still
+needs some work to come to 100% feature parity)
+
 ```js
 var mako = require('mako');
-var stat = require('mako-stat');
 var text = require('mako-text');
 var js = require('mako-js');
+var path = require('path');
+
+var entry = path.resolve('./index.js');
 
 mako()
-  .use(stat([ 'js', 'json' ]))
+  // read JS and JSON files as text
   .use(text([ 'js', 'json' ]))
+  // set up the JS plugin
   .use(js())
-  .build('./index.js')
-  .then(function () {
-    // done!
+  // build
+  .build(entry)
+  .then(function (tree) {
+    var file = tree.getFile(entry);
+    console.log(file.contents);
+    // the bundled JS
   });
 ```
 
@@ -40,10 +49,9 @@ Create a new plugin instance, with the following `options` available:
 
 ## Side Effects
 
-During analyze, this will parse JS files for `require` statements that are used to resolve dependencies.
+During **analyze**, this will parse JS files for `require(...)` statements for dependencies, then
+resolving them via [resolve](https://www.npmjs.com/package/resolve).
 
-During build, each entry JS file will be bundled into a single output file, all the dependencies will be pruned from the build tree.
-
-## Use-Cases
-
-This seeks to accomplish what build tools like Duo and Browserify do for front-end workflows.
+During **build**, each _entry_ JS file will have all of it's dependencies bundled into a single
+file. Along the way, those dependencies will be _removed_ from the tree, leaving only the output
+files behind.
