@@ -19,7 +19,7 @@ let plugins = [
   js()
 ];
 
-describe('text plugin', function () {
+describe('js plugin', function () {
   it('should create a script that executes and returns the top-level export', function () {
     let entry = fixture('simple/index.js');
 
