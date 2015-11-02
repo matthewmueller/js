@@ -47,7 +47,7 @@ Create a new plugin instance, with the following `options` available:
 
  - a read plugin for `js` and `json` extensions that has populated `file.contents` with a string
 
-## Side Effects
+## Effects
 
 During **analyze**, this will parse JS files for `require(...)` statements for dependencies, then
 resolving them via [resolve](https://www.npmjs.com/package/resolve).
