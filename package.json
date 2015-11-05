@@ -2,6 +2,10 @@
   "name": "mako-js",
   "version": "0.0.2",
   "description": "a mako plugin for assembling js files",
+  "keywords": [
+    "mako",
+    "plugin"
+  ],
   "repository": "makojs/js",
   "license": "MIT",
   "dependencies": {
