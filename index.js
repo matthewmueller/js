@@ -1,6 +1,7 @@
 
 'use strict';
 
+let builtins = require('./lib/builtins');
 let defaults = require('defaults');
 let deps = require('file-deps');
 let Pack = require('duo-pack');
@@ -69,9 +70,10 @@ module.exports = function (options) {
 
         resolve(dep, options, function (err, res, pkg) {
           if (err) return reject(err);
-          file.deps[dep] = path.relative(config.root, res);
+          let id = resolve.isCore(res) ? builtins[dep] : res;
           file.pkg = pkg;
-          file.addDependency(res);
+          file.deps[dep] = path.relative(config.root, id);
+          file.addDependency(id);
           accept();
         });
       });

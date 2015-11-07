@@ -67,6 +67,18 @@ describe('js plugin', function () {
         assert.isTrue(exec(file.contents));
       });
   });
+
+  it('should include shims for node core modules', function () {
+    let entry = fixture('core/index.js');
+
+    return mako()
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        assert.strictEqual(exec(file.contents), '.js');
+      });
+  });
 });
 
 /**
