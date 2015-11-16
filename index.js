@@ -6,7 +6,7 @@ let defaults = require('defaults');
 let deps = require('file-deps');
 let Pack = require('duo-pack');
 let path = require('path');
-let resolve = require('resolve');
+let resolve = require('browser-resolve');
 
 /**
  * Initialize the mako js plugin.
@@ -56,21 +56,19 @@ module.exports = function (options) {
    * @return {Promise}
    */
   function npm(file) {
-    let basedir = path.dirname(file.path);
-
     file.deps = Object.create(null);
     if (file.isEntry()) file.mapping = Object.create(null);
 
     return Promise.all(deps(file.contents, 'js').map(function (dep) {
       return new Promise(function (accept, reject) {
         let options = {
-          basedir: basedir,
-          extensions: [ '.js', '.json' ]
+          filename: file.path,
+          extensions: [ '.js', '.json' ],
+          modules: builtins
         };
 
-        resolve(dep, options, function (err, res, pkg) {
+        resolve(dep, options, function (err, id, pkg) {
           if (err) return reject(err);
-          let id = resolve.isCore(res) ? builtins[dep] : res;
           file.pkg = pkg;
           file.deps[dep] = path.relative(config.root, id);
           file.addDependency(id);
