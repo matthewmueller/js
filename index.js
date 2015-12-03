@@ -1,12 +1,21 @@
 
 'use strict';
 
+let readable = require('string-to-stream');
+let resolve = require('browser-resolve');
 let builtins = require('./lib/builtins');
+let concat = require('concat-stream');
 let defaults = require('defaults');
 let deps = require('file-deps');
 let Pack = require('duo-pack');
 let path = require('path');
-let resolve = require('browser-resolve');
+
+/**
+ * Core plugins
+ */
+
+let insertGlobals = require('insert-module-globals');
+let envify = require('envify');
 
 /**
  * Initialize the mako js plugin.
@@ -19,6 +28,7 @@ let resolve = require('browser-resolve');
  */
 module.exports = function (options) {
   let config = defaults(options, { root: process.cwd() });
+  let mapping = Object.create(null);
 
   return function (mako) {
     mako.postread('json', json);
@@ -55,11 +65,21 @@ module.exports = function (options) {
    * @param {Builder} mako  The mako builder instance.
    * @return {Promise}
    */
-  function npm(file) {
+  function* npm(file) {
     file.deps = Object.create(null);
-    if (file.isEntry()) file.mapping = Object.create(null);
 
-    return Promise.all(deps(file.contents, 'js').map(function (dep) {
+    // include node globals and environment variables
+    file.contents = yield function compile(done) {
+      readable(file.contents)
+        .pipe(envify(file.path))
+        .pipe(insertGlobals(file.path, { basedir: config.root }))
+        .pipe(concat(function (buf) {
+          done(null, buf);
+        }));
+    };
+
+    // traverse dependencies
+    return yield Promise.all(deps(file.contents, 'js').map(function (dep) {
       return new Promise(function (accept, reject) {
         let options = {
           filename: file.path,
@@ -87,18 +107,28 @@ module.exports = function (options) {
    * @param {Builder} mako  The mako builder instance.
    */
   function combine(file, tree) {
-    // add to the mapping for any linked entry files
-    tree.getEntries(file.path).forEach(function (entry) {
-      tree.getFile(entry).mapping[file.id] = prepare(file);
-    });
+    var dependants = file.dependants();
+
+    // check if the file is the topmost js file,
+    // but it may not be an entry file
+    // ex. html file includes a js file
+    var isEntry = !dependants
+      .filter(function (parent) {
+        var file = tree.getFile(parent);
+        return file.type === 'js';
+      })
+      .length;
+
+    // add the file to the mapping
+    mapping[file.id] = prepare(file, isEntry);
 
     // remove these dependency links
-    file.dependants().forEach(function (parent) {
+    dependants.forEach(function (parent) {
       tree.removeDependency(parent, file.path);
     });
 
     // only leave the entry files behind
-    if (!file.isEntry()) tree.removeFile(file.path);
+    if (!isEntry) tree.removeFile(file.path);
   }
 
   /**
@@ -108,13 +138,13 @@ module.exports = function (options) {
    * @param {Boolean} entry  Whether or not this file is the entry.
    * @return {Object}
    */
-  function prepare(file) {
+  function prepare(file, entry) {
     return {
       id: file.id,
       deps: file.deps || {},
       type: file.type,
       src: file.contents,
-      entry: file.isEntry()
+      entry: entry
     };
   }
 
@@ -124,7 +154,7 @@ module.exports = function (options) {
    * @param {File} file  The current file being processed.
    */
   function pack(file) {
-    let pack = new Pack(file.mapping);
+    let pack = new Pack(mapping);
     let results = pack.pack(file.id);
     file.contents = results.code;
     // TODO: sourcemaps

@@ -79,8 +79,61 @@ describe('js plugin', function () {
         assert.strictEqual(exec(file.contents), '.js');
       });
   });
-});
 
+  it('should work with node globals', function () {
+    let entry = fixture('globals/index.js');
+
+    return mako()
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        let exported = exec(file.contents);
+        assert.strictEqual(exported.global.test, 'test');
+        assert.strictEqual(exported.Buffer.name, Buffer.name);
+        assert.strictEqual(exported.isBuffer.name, Buffer.isBuffer.name);
+      });
+  });
+
+  it('should work with environment variables', function () {
+    let entry = fixture('envvars/index.js');
+    process.env.TEST = 'test';
+    return mako()
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        assert.strictEqual(exec(file.contents), 'test');
+        delete process.env.TEST;
+      });
+  });
+
+  it('should build sub-entries properly', function () {
+    let entry = fixture('subentries/entry.txt');
+
+    return mako()
+      .use(text([ 'txt' ]))
+      .use(parseText)
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(fixture('subentries/index.js'));
+        assert.strictEqual(exec(file.contents), 'nested');
+      });
+
+    /**
+     * parse test plugin
+     *
+     * @param {Mako} mako mako object
+     */
+    function parseText(mako) {
+      mako.dependencies('txt', function (file) {
+        var filepath = path.resolve(path.dirname(file.path), file.contents.trim());
+        file.addDependency(filepath);
+      });
+    }
+  });
+});
 /**
  * Executes the given code, returning it's return value.
  *
