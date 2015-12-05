@@ -107,6 +107,32 @@ describe('js plugin', function () {
         delete process.env.TEST;
       });
   });
+
+  it('should build sub-entries properly', function () {
+    let entry = fixture('subentries/entry.txt');
+
+    return mako()
+      .use(text([ 'txt' ]))
+      .use(parseText)
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(fixture('subentries/index.js'));
+        assert.strictEqual(exec(file.contents), 'nested');
+      });
+
+    /**
+     * parse test plugin
+     *
+     * @param {Mako} mako mako object
+     */
+    function parseText(mako) {
+      mako.dependencies('txt', function (file) {
+        var filepath = path.resolve(path.dirname(file.path), file.contents.trim());
+        file.addDependency(filepath);
+      });
+    }
+  });
 });
 /**
  * Executes the given code, returning it's return value.

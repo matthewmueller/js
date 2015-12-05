@@ -12,6 +12,8 @@ let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 
+const mappings = new WeakMap();
+
 /**
  * Initialize the mako js plugin.
  *
@@ -95,18 +97,18 @@ module.exports = function (options) {
    * @param {Builder} mako  The mako builder instance.
    */
   function combine(file, tree) {
-    // add to the mapping for any linked entry files
-    tree.getEntries(file.path).forEach(function (entry) {
-      tree.getFile(entry).mapping[file.id] = prepare(file);
-    });
+    let mapping = getMapping(tree);
 
-    // remove these dependency links
+    // add this file to the mapping
+    mapping[file.id] = prepare(file);
+
+    // remove the dependency links for the direct dependants
     file.dependants().forEach(function (parent) {
       tree.removeDependency(parent, file.path);
     });
 
     // only leave the entry files behind
-    if (!file.isEntry()) tree.removeFile(file.path);
+    if (!isRoot(file)) tree.removeFile(file.path);
   }
 
   /**
@@ -131,8 +133,9 @@ module.exports = function (options) {
    *
    * @param {File} file  The current file being processed.
    */
-  function pack(file) {
-    let pack = new Pack(file.mapping);
+  function pack(file, tree) {
+    let mapping = getMapping(tree);
+    let pack = new Pack(mapping);
     let results = pack.pack(file.id);
     file.contents = results.code;
     // TODO: sourcemaps
@@ -155,5 +158,33 @@ function postprocess(file, root) {
       .pipe(insertGlobals(file.path, { basedir: root }))
       .on('error', reject)
       .pipe(concat(resolve));
+  });
+}
+
+/**
+ * Retrieve the mapping for this build tree, create one if necessary.
+ *
+ * @param {Tree} tree  The build tree to use as the key.
+ * @return {Object}
+ */
+function getMapping(tree) {
+  if (!mappings.has(tree)) {
+    mappings.set(tree, Object.create(null));
+  }
+
+  return mappings.get(tree);
+}
+
+/**
+ * Determine if a CSS file is at the root of a dependency chain. (allows for
+ * non-CSS dependants, such as HTML)
+ *
+ * @param {File} file  The file to examine.
+ * @return {Boolean}
+ */
+function isRoot(file) {
+  let tree = file.tree;
+  return file.dependants().every(function (dependant) {
+    return tree.getFile(dependant).type === 'css';
   });
 }
