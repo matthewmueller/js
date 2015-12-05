@@ -1,4 +1,9 @@
 
+0.4.0 / 2015-12-04
+==================
+
+  * support node global variables and environment variables
+
 0.3.0 / 2015-12-03
 ==================
 
