@@ -1,21 +1,16 @@
 
 'use strict';
 
-let readable = require('string-to-stream');
-let resolve = require('browser-resolve');
 let builtins = require('./lib/builtins');
 let concat = require('concat-stream');
 let defaults = require('defaults');
 let deps = require('file-deps');
+let envify = require('envify');
+let insertGlobals = require('insert-module-globals');
 let Pack = require('duo-pack');
 let path = require('path');
-
-/**
- * Core plugins
- */
-
-let insertGlobals = require('insert-module-globals');
-let envify = require('envify');
+let readable = require('string-to-stream');
+let resolve = require('browser-resolve');
 
 /**
  * Initialize the mako js plugin.
@@ -69,16 +64,7 @@ module.exports = function (options) {
     if (file.isEntry()) file.mapping = Object.create(null);
 
     // include node globals and environment variables
-    file.contents = yield function compile(done) {
-      readable(file.contents)
-        .pipe(envify(file.path))
-        .on('error', done)
-        .pipe(insertGlobals(file.path, { basedir: config.root }))
-        .on('error', done)
-        .pipe(concat(function (buf) {
-          done(null, buf);
-        }));
-    };
+    file.contents = yield postprocess(file, config.root);
 
     // traverse dependencies
     return yield Promise.all(deps(file.contents, 'js').map(function (dep) {
@@ -152,3 +138,22 @@ module.exports = function (options) {
     // TODO: sourcemaps
   }
 };
+
+
+/**
+ * Inject node globals and env variables into the JS source code.
+ *
+ * @param {File} file    The file to process.
+ * @param {String} root  The root directory.
+ * @return {Promise}
+ */
+function postprocess(file, root) {
+  return new Promise(function (resolve, reject) {
+    readable(file.contents)
+      .pipe(envify(file.path))
+      .on('error', reject)
+      .pipe(insertGlobals(file.path, { basedir: root }))
+      .on('error', reject)
+      .pipe(concat(resolve));
+  });
+}

@@ -80,7 +80,7 @@ describe('js plugin', function () {
       });
   });
 
-  it('should work with node globals', function () {
+  it('should inject any node globals that are used', function () {
     let entry = fixture('globals/index.js');
 
     return mako()
@@ -95,7 +95,7 @@ describe('js plugin', function () {
       });
   });
 
-  it('should work with environment variables', function () {
+  it('should inject the current environment variables', function () {
     let entry = fixture('envvars/index.js');
     process.env.TEST = 'test';
     return mako()
