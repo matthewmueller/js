@@ -79,8 +79,35 @@ describe('js plugin', function () {
         assert.strictEqual(exec(file.contents), '.js');
       });
   });
-});
 
+  it('should work with node globals', function () {
+    let entry = fixture('globals/index.js');
+
+    return mako()
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        let exported = exec(file.contents);
+        assert.strictEqual(exported.global.test, 'test');
+        assert.strictEqual(exported.Buffer.name, Buffer.name);
+        assert.strictEqual(exported.isBuffer.name, Buffer.isBuffer.name);
+      });
+  });
+
+  it('should work with environment variables', function () {
+    let entry = fixture('envvars/index.js');
+    process.env.TEST = 'test';
+    return mako()
+      .use(plugins)
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        assert.strictEqual(exec(file.contents), 'test');
+        delete process.env.TEST;
+      });
+  });
+});
 /**
  * Executes the given code, returning it's return value.
  *
