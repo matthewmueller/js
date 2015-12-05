@@ -72,7 +72,9 @@ module.exports = function (options) {
     file.contents = yield function compile(done) {
       readable(file.contents)
         .pipe(envify(file.path))
+        .on('error', done)
         .pipe(insertGlobals(file.path, { basedir: config.root }))
+        .on('error', done)
         .pipe(concat(function (buf) {
           done(null, buf);
         }));
