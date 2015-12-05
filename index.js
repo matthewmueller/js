@@ -63,7 +63,6 @@ module.exports = function (options) {
    */
   function* npm(file) {
     file.deps = Object.create(null);
-    if (file.isEntry()) file.mapping = Object.create(null);
 
     // include node globals and environment variables
     file.contents = yield postprocess(file, config.root);
