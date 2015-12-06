@@ -1,6 +1,6 @@
 {
   "name": "mako-js",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A mako plugin for assembling js files.",
   "keywords": [
     "mako",
