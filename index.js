@@ -175,15 +175,26 @@ function getMapping(tree) {
 }
 
 /**
- * Determine if a CSS file is at the root of a dependency chain. (allows for
- * non-CSS dependants, such as HTML)
+ * Determine if a JS file is at the root of a dependency chain. (allows for
+ * non-JS dependants, such as HTML)
  *
  * @param {File} file  The file to examine.
  * @return {Boolean}
  */
 function isRoot(file) {
+  // short-circuit, an entry file is automatically considered a root
+  if (file.entry) return true;
+
   let tree = file.tree;
-  return file.dependants().every(function (dependant) {
-    return tree.getFile(dependant).type === 'css';
+
+  // if there are no dependants, this is assumed to be a root (this could
+  // possibly be inferred from file.entry)
+  let dependants = file.dependants();
+  if (dependants.length === 0) return true;
+
+  // if any of the dependants are not js, (ie: html) this is a root.
+  // TODO: support other file types (eg: coffee, es, ts)
+  return dependants.some(function (dependant) {
+    return tree.getFile(dependant).type !== 'js';
   });
 }
