@@ -38,6 +38,7 @@
     "stream-http": "^2.0.2",
     "string-to-stream": "^1.0.1",
     "string_decoder": "^0.10.31",
+    "syntax-error": "^1.1.4",
     "timers-browserify": "^1.4.1",
     "tty-browserify": "0.0.0",
     "url": "^0.11.0",

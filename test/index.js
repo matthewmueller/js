@@ -133,6 +133,13 @@ describe('js plugin', function () {
       });
     }
   });
+
+  it('should throw for syntax errors in JS files', function () {
+    let entry = fixture('syntax-error/index.js');
+    let builder = mako().use(plugins);
+
+    return assert.isRejected(builder.build(entry), 'Unexpected token');
+  });
 });
 /**
  * Executes the given code, returning it's return value.

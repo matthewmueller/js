@@ -11,6 +11,7 @@ let Pack = require('duo-pack');
 let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
+let syntax = require('syntax-error');
 
 const mappings = new WeakMap();
 
@@ -29,6 +30,7 @@ module.exports = function (options) {
   return function (mako) {
     mako.postread('json', json);
     mako.postread([ 'js', 'json' ], relative);
+    mako.predependencies('js', check);
     mako.dependencies('js', npm);
     mako.postdependencies([ 'js', 'json' ], combine);
     mako.prewrite('js', pack);
@@ -50,6 +52,18 @@ module.exports = function (options) {
    */
   function relative(file) {
     file.id = path.relative(config.root, file.path);
+  }
+
+  /**
+   * Performs a syntax check on the source file before attempting to parse
+   * dependencies. This will give a better error than simply dropping into
+   * file-deps.
+   *
+   * @param {File} file  The current file being processed.
+   */
+  function check(file) {
+    var err = syntax(file.contents, file.path);
+    if (err) throw err;
   }
 
   /**
