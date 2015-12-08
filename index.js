@@ -145,6 +145,7 @@ module.exports = function (options) {
    * Transform the actual file code via duo-pack.
    *
    * @param {File} file  The current file being processed.
+   * @param {Tree} tree  The build tree.
    */
   function pack(file, tree) {
     let mapping = getMapping(tree);
@@ -199,16 +200,12 @@ function isRoot(file) {
   // short-circuit, an entry file is automatically considered a root
   if (file.entry) return true;
 
-  let tree = file.tree;
-
   // if there are no dependants, this is assumed to be a root (this could
   // possibly be inferred from file.entry)
-  let dependants = file.dependants();
+  let dependants = file.dependants({ objects: true });
   if (dependants.length === 0) return true;
 
   // if any of the dependants are not js, (ie: html) this is a root.
   // TODO: support other file types (eg: coffee, es, ts)
-  return dependants.some(function (dependant) {
-    return tree.getFile(dependant).type !== 'js';
-  });
+  return dependants.some(file => file.type !== 'js');
 }
