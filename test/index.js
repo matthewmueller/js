@@ -141,6 +141,31 @@ describe('js plugin', function () {
     return assert.isRejected(builder.build(entry), 'Unexpected token');
   });
 });
+
+it('should work for non-JS dependencies', function () {
+  let entry = fixture('non-js-deps/index.js');
+  return mako()
+    .use(text('txt'))
+    .use(txt)
+    .use(plugins)
+    .build(entry)
+    .then(function (tree) {
+      let file = tree.getFile(entry);
+      assert.strictEqual(exec(file.contents), 'hi from a text file!');
+    });
+
+  /**
+   * text plugin
+   *
+   * @param {Mako} mako object
+   */
+  function txt(mako) {
+    mako.postread('txt', function (file) {
+      file.contents = `module.exports = "${file.contents.trim()}";`;
+      file.type = 'js';
+    });
+  }
+});
 /**
  * Executes the given code, returning it's return value.
  *

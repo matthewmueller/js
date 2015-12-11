@@ -29,7 +29,7 @@ module.exports = function (options) {
 
   return function (mako) {
     mako.postread('json', json);
-    mako.postread([ 'js', 'json' ], relative);
+    mako.predependencies([ 'js', 'json' ], relative);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
     mako.postdependencies([ 'js', 'json' ], combine);
