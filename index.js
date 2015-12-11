@@ -206,6 +206,5 @@ function isRoot(file) {
   if (dependants.length === 0) return true;
 
   // if any of the dependants are not js, (ie: html) this is a root.
-  // TODO: support other file types (eg: coffee, es, ts)
   return dependants.some(file => file.type !== 'js');
 }
