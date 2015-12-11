@@ -1,4 +1,10 @@
 
+0.7.2 / 2015-12-11
+==================
+
+  * meta: removing superfluous TODO comment (fixes #8)
+  * bug: support non-JS dependencies
+
 0.7.1 / 2015-12-07
 ==================
 
