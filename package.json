@@ -12,6 +12,7 @@
   "repository": "makojs/js",
   "license": "MIT",
   "dependencies": {
+    "array-flatten": "^2.0.0",
     "assert": "^1.3.0",
     "browser-resolve": "^1.10.1",
     "browserify-zlib": "^0.1.4",

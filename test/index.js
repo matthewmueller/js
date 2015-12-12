@@ -143,8 +143,36 @@ describe('js plugin', function () {
       });
   });
 
-  context('with options.sourceMaps', function () {
-    context('inline', function () {
+  context('with options', function () {
+    context('.extensions', function () {
+      it('should allow resolving the extra extensions', function () {
+        let entry = fixture('extensions/index.js');
+        return mako()
+          .use([ stat('es'), text('es') ])
+          .postread('es', file => file.type = 'js')
+          .use(plugins({ extensions: [ '.es' ] }))
+          .build(entry)
+          .then(function (tree) {
+            let file = tree.getFile(entry);
+            assert.isTrue(exec(file.contents));
+          });
+      });
+
+      it('should allow flatten the specified list', function () {
+        let entry = fixture('extensions/index.js');
+        return mako()
+          .use([ stat('es'), text('es') ])
+          .postread('es', file => file.type = 'js')
+          .use(plugins({ extensions: '.es' }))
+          .build(entry)
+          .then(function (tree) {
+            let file = tree.getFile(entry);
+            assert.isTrue(exec(file.contents));
+          });
+      });
+    });
+
+    context('.sourceMaps', function () {
       it('should include an inline source-map', function () {
         let entry = fixture('source-maps/index.js');
         return mako()
@@ -166,9 +194,7 @@ describe('js plugin', function () {
             assert.strictEqual(exec(code.contents), 4);
           });
       });
-    });
 
-    context('true', function () {
       it('should include an external source-map', function () {
         let entry = fixture('source-maps/index.js');
         return mako()

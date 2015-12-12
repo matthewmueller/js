@@ -6,6 +6,7 @@ let concat = require('concat-stream');
 let defaults = require('defaults');
 let deps = require('file-deps');
 let envify = require('envify');
+let flatten = require('array-flatten');
 let insertGlobals = require('insert-module-globals');
 let Pack = require('duo-pack');
 let path = require('path');
@@ -26,6 +27,7 @@ const mappings = new WeakMap();
  */
 module.exports = function (options) {
   let config = defaults(options, {
+    extensions: [],
     root: process.cwd(),
     sourceMaps: false
   });
@@ -89,7 +91,7 @@ module.exports = function (options) {
       return new Promise(function (accept, reject) {
         let options = {
           filename: file.path,
-          extensions: [ '.js', '.json' ],
+          extensions: flatten([ '.js', '.json', config.extensions ]),
           modules: builtins
         };
 
