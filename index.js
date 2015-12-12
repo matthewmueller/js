@@ -25,7 +25,10 @@ const mappings = new WeakMap();
  * @return {Function}
  */
 module.exports = function (options) {
-  let config = defaults(options, { root: process.cwd() });
+  let config = defaults(options, {
+    root: process.cwd(),
+    sourceMaps: false
+  });
 
   return function (mako) {
     mako.postread('json', json);
@@ -111,6 +114,7 @@ module.exports = function (options) {
    */
   function combine(file, tree) {
     let mapping = getMapping(tree);
+    let remove = !isRoot(file);
 
     // add this file to the mapping
     mapping[file.id] = prepare(file);
@@ -121,7 +125,7 @@ module.exports = function (options) {
     });
 
     // only leave the entry files behind
-    if (!isRoot(file)) tree.removeFile(file.path);
+    if (remove) tree.removeFile(file.path);
   }
 
   /**
@@ -149,10 +153,18 @@ module.exports = function (options) {
    */
   function pack(file, tree) {
     let mapping = getMapping(tree);
+
     let pack = new Pack(mapping);
+    pack.sourceMap(config.sourceMaps);
+
     let results = pack.pack(file.id);
     file.contents = results.code;
-    // TODO: sourcemaps
+
+    // if we have a map here, that means it's going to be an external file
+    if (results.map) {
+      let map = file.addDependency(file.path + '.map');
+      map.contents = results.map;
+    }
   }
 };
 
@@ -171,7 +183,7 @@ function postprocess(file, root) {
       .on('error', reject)
       .pipe(insertGlobals(file.path, { basedir: root }))
       .on('error', reject)
-      .pipe(concat(resolve));
+      .pipe(concat({ encoding: 'string' }, resolve));
   });
 }
 

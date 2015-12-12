@@ -2,6 +2,7 @@
 'use strict';
 
 let chai = require('chai');
+let convert = require('convert-source-map');
 let js = require('..');
 let mako = require('mako');
 let path = require('path');
@@ -13,18 +14,12 @@ chai.use(require('chai-as-promised'));
 let assert = chai.assert;
 let fixture = path.resolve.bind(path, __dirname, 'fixtures');
 
-let plugins = [
-  stat([ 'js', 'json' ]),
-  text([ 'js', 'json' ]),
-  js()
-];
-
 describe('js plugin', function () {
   it('should create a script that executes and returns the top-level export', function () {
     let entry = fixture('simple/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -36,7 +31,7 @@ describe('js plugin', function () {
     let entry = fixture('nested/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -48,7 +43,7 @@ describe('js plugin', function () {
     let entry = fixture('modules/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -60,7 +55,7 @@ describe('js plugin', function () {
     let entry = fixture('json/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -72,7 +67,7 @@ describe('js plugin', function () {
     let entry = fixture('core/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -84,7 +79,7 @@ describe('js plugin', function () {
     let entry = fixture('globals/index.js');
 
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -99,7 +94,7 @@ describe('js plugin', function () {
     let entry = fixture('envvars/index.js');
     process.env.TEST = 'test';
     return mako()
-      .use(plugins)
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
@@ -113,59 +108,92 @@ describe('js plugin', function () {
 
     return mako()
       .use(text([ 'txt' ]))
-      .use(parseText)
-      .use(plugins)
+      .dependencies('txt', function parseText(file) {
+        var filepath = path.resolve(path.dirname(file.path), file.contents.trim());
+        file.addDependency(filepath);
+      })
+      .use(plugins())
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(fixture('subentries/index.js'));
         assert.strictEqual(exec(file.contents), 'nested');
       });
-
-    /**
-     * parse test plugin
-     *
-     * @param {Mako} mako mako object
-     */
-    function parseText(mako) {
-      mako.dependencies('txt', function (file) {
-        var filepath = path.resolve(path.dirname(file.path), file.contents.trim());
-        file.addDependency(filepath);
-      });
-    }
   });
 
   it('should throw for syntax errors in JS files', function () {
     let entry = fixture('syntax-error/index.js');
-    let builder = mako().use(plugins);
+    let builder = mako().use(plugins());
 
     return assert.isRejected(builder.build(entry), 'Unexpected token');
   });
-});
 
-it('should work for non-JS dependencies', function () {
-  let entry = fixture('non-js-deps/index.js');
-  return mako()
-    .use(text('txt'))
-    .use(txt)
-    .use(plugins)
-    .build(entry)
-    .then(function (tree) {
-      let file = tree.getFile(entry);
-      assert.strictEqual(exec(file.contents), 'hi from a text file!');
+  it('should work for non-JS dependencies', function () {
+    let entry = fixture('non-js-deps/index.js');
+    return mako()
+      .use(text('txt'))
+      .postread('txt', function txt(file) {
+        file.contents = `module.exports = "${file.contents.trim()}";`;
+        file.type = 'js';
+      })
+      .use(plugins())
+      .build(entry)
+      .then(function (tree) {
+        let file = tree.getFile(entry);
+        assert.strictEqual(exec(file.contents), 'hi from a text file!');
+      });
+  });
+
+  context('with options.sourceMaps', function () {
+    context('inline', function () {
+      it('should include an inline source-map', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: 'inline' }))
+          .build(entry)
+          .then(function (tree) {
+            let code = tree.getFile(entry);
+            assert(convert.fromSource(code.contents), 'should have an inline source-map');
+          });
+      });
+
+      it('should not break the original code', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: 'inline' }))
+          .build(entry)
+          .then(function (tree) {
+            let code = tree.getFile(entry);
+            assert.strictEqual(exec(code.contents), 4);
+          });
+      });
     });
 
-  /**
-   * text plugin
-   *
-   * @param {Mako} mako object
-   */
-  function txt(mako) {
-    mako.postread('txt', function (file) {
-      file.contents = `module.exports = "${file.contents.trim()}";`;
-      file.type = 'js';
+    context('true', function () {
+      it('should include an external source-map', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: true }))
+          .build(entry)
+          .then(function (tree) {
+            let map = tree.getFile(entry + '.map');
+            assert(convert.fromJSON(map.contents), 'should be a valid source-map file');
+          });
+      });
+
+      it('should not break the original code', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: true }))
+          .build(entry)
+          .then(function (tree) {
+            let code = tree.getFile(entry);
+            assert.strictEqual(exec(code.contents), 4);
+          });
+      });
     });
-  }
+  });
 });
+
 /**
  * Executes the given code, returning it's return value.
  *
@@ -173,5 +201,19 @@ it('should work for non-JS dependencies', function () {
  * @return {*}
  */
 function exec(code) {
-  return vm.runInNewContext(code + '(1)');
+  return vm.runInNewContext(code)(1);
+}
+
+/**
+ * Return the basic plugins for running tests.
+ *
+ * @param {Object} [options]  Passed to the js plugin directly.
+ * @return {Array}
+ */
+function plugins(options) {
+  return [
+    stat([ 'js', 'json' ]),
+    text([ 'js', 'json' ]),
+    js(options)
+  ];
 }
