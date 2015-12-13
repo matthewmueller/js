@@ -21,7 +21,6 @@
     "console-browserify": "^1.1.0",
     "constants-browserify": "^1.0.0",
     "crypto-browserify": "^3.11.0",
-    "defaults": "^1.0.3",
     "domain-browser": "^1.1.4",
     "duo-pack": "^3.0.5",
     "envify": "^3.4.0",

@@ -3,7 +3,6 @@
 
 let builtins = require('./lib/builtins');
 let concat = require('concat-stream');
-let defaults = require('defaults');
 let deps = require('file-deps');
 let envify = require('envify');
 let flatten = require('array-flatten');
@@ -14,6 +13,15 @@ let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 let syntax = require('syntax-error');
 
+// default plugin configuration
+const defaults = {
+  extensions: [],
+  resolveOptions: null,
+  root: process.cwd(),
+  sourceMaps: false
+};
+
+// memory-efficient way of tracking mappings per-build
 const mappings = new WeakMap();
 
 /**
@@ -26,11 +34,7 @@ const mappings = new WeakMap();
  * @return {Function}
  */
 module.exports = function (options) {
-  let config = defaults(options, {
-    extensions: [],
-    root: process.cwd(),
-    sourceMaps: false
-  });
+  let config = extend(defaults, options);
 
   return function (mako) {
     mako.postread('json', json);
@@ -89,11 +93,11 @@ module.exports = function (options) {
     // traverse dependencies
     return yield Promise.all(deps(file.contents, 'js').map(function (dep) {
       return new Promise(function (accept, reject) {
-        let options = {
+        let options = extend(config.resolveOptions, {
           filename: file.path,
           extensions: flatten([ '.js', '.json', config.extensions ]),
           modules: builtins
-        };
+        });
 
         resolve(dep, options, function (err, id, pkg) {
           if (err) return reject(err);
@@ -170,6 +174,17 @@ module.exports = function (options) {
   }
 };
 
+/**
+ * Helper for generating objects. The returned value is always a fresh object
+ * with all arguments assigned as sources.
+ *
+ * @return {Object}
+ */
+function extend() {
+  var sources = [].slice.call(arguments);
+  var args = [ Object.create(null) ].concat(sources);
+  return Object.assign.apply(null, args);
+}
 
 /**
  * Inject node globals and env variables into the JS source code.

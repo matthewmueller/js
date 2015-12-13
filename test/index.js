@@ -172,6 +172,20 @@ describe('js plugin', function () {
       });
     });
 
+    context('.resolveOptions', function () {
+      it('should pass other options to resolve', function () {
+        let entry = fixture('modules-alt-dir/index.js');
+
+        return mako()
+          .use(plugins({ resolveOptions: { moduleDirectory: 'npm' } }))
+          .build(entry)
+          .then(function (tree) {
+            let file = tree.getFile(entry);
+            assert.isTrue(exec(file.contents));
+          });
+      });
+    });
+
     context('.sourceMaps', function () {
       it('should include an inline source-map', function () {
         let entry = fixture('source-maps/index.js');

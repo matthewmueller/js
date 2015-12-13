@@ -41,11 +41,10 @@ mako()
 
 Create a new plugin instance, with the following `options` available:
 
- - `sourceMaps` specify `true` for external source-maps or `"inline"` for inline source-maps
-   (default: `false`)
+ - `sourceMaps` specify `true` for external source-maps or `"inline"` for inline source-maps (default: `false`)
  - `root` the root for the project, paths will be set relative to here (default: `pwd`)
- - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json`
-   (eg: `.coffee`)
+ - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json` (eg: `.coffee`)
+ - `resolveOptions` additional options to be passed to [resolve](https://www.npmjs.com/package/resolve)
 
 ## Dependencies
 
