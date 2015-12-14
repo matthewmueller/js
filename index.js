@@ -3,6 +3,7 @@
 
 let builtins = require('./lib/builtins');
 let concat = require('concat-stream');
+let debug = require('debug')('mako-js');
 let deps = require('file-deps');
 let envify = require('envify');
 let flatten = require('array-flatten');
@@ -13,11 +14,14 @@ let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 let syntax = require('syntax-error');
 
+const pwd = process.cwd();
+const relative = abs => path.relative(pwd, abs);
+
 // default plugin configuration
 const defaults = {
   extensions: [],
   resolveOptions: null,
-  root: process.cwd(),
+  root: pwd,
   sourceMaps: false
 };
 
@@ -34,11 +38,12 @@ const mappings = new WeakMap();
  * @return {Function}
  */
 module.exports = function (options) {
+  debug('initialize %j', options);
   let config = extend(defaults, options);
 
   return function (mako) {
     mako.postread('json', json);
-    mako.predependencies([ 'js', 'json' ], relative);
+    mako.predependencies([ 'js', 'json' ], id);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
     mako.postdependencies([ 'js', 'json' ], pack);
@@ -58,7 +63,7 @@ module.exports = function (options) {
    *
    * @param {File} file  The current file being processed.
    */
-  function relative(file) {
+  function id(file) {
     file.id = path.relative(config.root, file.path);
   }
 
@@ -98,11 +103,15 @@ module.exports = function (options) {
           modules: builtins
         });
 
-        resolve(dep, options, function (err, id, pkg) {
+        let parent = relative(file.path);
+        debug('resolving %s from %s', dep, parent);
+        resolve(dep, options, function (err, res, pkg) {
           if (err) return reject(err);
+          let child = relative(res);
+          debug('resolved %s -> %s from %s', dep, child, parent);
           file.pkg = pkg;
-          file.deps[dep] = path.relative(config.root, id);
-          file.addDependency(id);
+          file.deps[dep] = path.relative(config.root, res);
+          file.addDependency(res);
           accept();
         });
       });
@@ -133,6 +142,7 @@ module.exports = function (options) {
     if (!root) {
       tree.removeFile(file.path);
     } else {
+      debug('packing %s', relative(file.path));
       let packer = new Pack(mapping);
       packer.sourceMap(config.sourceMaps);
 
