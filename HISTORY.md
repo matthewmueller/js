@@ -1,4 +1,9 @@
 
+0.9.2 / 2015-12-13
+==================
+
+  * doing more work in postdependencies hook (fixes #11)
+
 0.9.1 / 2015-12-13
 ==================
 
