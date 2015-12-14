@@ -41,8 +41,7 @@ module.exports = function (options) {
     mako.predependencies([ 'js', 'json' ], relative);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
-    mako.postdependencies([ 'js', 'json' ], combine);
-    mako.prewrite('js', pack);
+    mako.postdependencies([ 'js', 'json' ], pack);
   };
 
   /**
@@ -118,9 +117,9 @@ module.exports = function (options) {
    * @param {Tree} tree     The build tree.
    * @param {Builder} mako  The mako builder instance.
    */
-  function combine(file, tree) {
+  function pack(file, tree) {
     let mapping = getMapping(tree);
-    let remove = !isRoot(file);
+    let root = isRoot(file);
 
     // add this file to the mapping
     mapping[file.id] = prepare(file);
@@ -131,7 +130,21 @@ module.exports = function (options) {
     });
 
     // only leave the entry files behind
-    if (remove) tree.removeFile(file.path);
+    if (!root) {
+      tree.removeFile(file.path);
+    } else {
+      let packer = new Pack(mapping);
+      packer.sourceMap(config.sourceMaps);
+
+      let results = packer.pack(file.id);
+      file.contents = results.code;
+
+      // if we have a map here, that means it's going to be an external file
+      if (results.map) {
+        let map = file.addDependency(file.path + '.map');
+        map.contents = results.map;
+      }
+    }
   }
 
   /**
@@ -149,28 +162,6 @@ module.exports = function (options) {
       src: file.contents,
       entry: file.isEntry()
     };
-  }
-
-  /**
-   * Transform the actual file code via duo-pack.
-   *
-   * @param {File} file  The current file being processed.
-   * @param {Tree} tree  The build tree.
-   */
-  function pack(file, tree) {
-    let mapping = getMapping(tree);
-
-    let pack = new Pack(mapping);
-    pack.sourceMap(config.sourceMaps);
-
-    let results = pack.pack(file.id);
-    file.contents = results.code;
-
-    // if we have a map here, that means it's going to be an external file
-    if (results.map) {
-      let map = file.addDependency(file.path + '.map');
-      map.contents = results.map;
-    }
   }
 };
 

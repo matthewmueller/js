@@ -144,6 +144,8 @@ describe('js plugin', function () {
   });
 
   context('with options', function () {
+    // TODO .root
+
     context('.extensions', function () {
       it('should allow resolving the extra extensions', function () {
         let entry = fixture('extensions/index.js');
