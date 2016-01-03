@@ -1,18 +1,20 @@
 
 'use strict';
 
+let bpack = require('browser-pack');
 let builtins = require('./lib/builtins');
 let concat = require('concat-stream');
+let convert = require('convert-source-map');
 let debug = require('debug')('mako-js');
 let deps = require('file-deps');
 let envify = require('envify');
 let flatten = require('array-flatten');
 let insertGlobals = require('insert-module-globals');
-let Pack = require('duo-pack');
 let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 let syntax = require('syntax-error');
+let values = require('object-values');
 
 const pwd = process.cwd();
 const relative = abs => path.relative(pwd, abs);
@@ -126,7 +128,7 @@ module.exports = function (options) {
    * @param {Tree} tree     The build tree.
    * @param {Builder} mako  The mako builder instance.
    */
-  function pack(file, tree) {
+  function* pack(file, tree) {
     let mapping = getMapping(tree);
     let root = isRoot(file);
 
@@ -143,10 +145,8 @@ module.exports = function (options) {
       tree.removeFile(file.path);
     } else {
       debug('packing %s', relative(file.path));
-      let packer = new Pack(mapping);
-      packer.sourceMap(config.sourceMaps);
+      let results = yield doPack(values(mapping), config.sourceMaps);
 
-      let results = packer.pack(file.id);
       file.contents = results.code;
 
       // if we have a map here, that means it's going to be an external file
@@ -168,8 +168,8 @@ module.exports = function (options) {
     return {
       id: file.id,
       deps: file.deps || {},
-      type: file.type,
-      src: file.contents,
+      source: file.contents,
+      sourceFile: config.sourceMaps ? file.id : null,
       entry: file.isEntry()
     };
   }
@@ -237,4 +237,40 @@ function isRoot(file) {
 
   // if any of the dependants are not js, (ie: html) this is a root.
   return dependants.some(file => file.type !== 'js');
+}
+
+/**
+ * Perform the actual pack, which converts the mapping into an object with
+ * the output code and map.
+ *
+ * @param {Array} mapping              The code mapping (see module-deps)
+ * @param {Boolean|String} sourceMaps  Whether to include source-maps
+ * @return {Object}
+ */
+function* doPack(mapping, sourceMaps) {
+  let code = yield runBrowserPack(mapping);
+
+  if (!sourceMaps) {
+    return { code: code, map: null };
+  } else if (sourceMaps === 'inline') {
+    return { code: code, map: null };
+  }
+
+  let map = convert.fromSource(code);
+  return { code: convert.removeComments(code), map: map.toJSON() };
+}
+
+/**
+ * Run the code through browser-pack, which only does an inline source map.
+ *
+ * @param {Array} mapping  The code mapping (see module-deps)
+ * @return {Promise}
+ */
+function runBrowserPack(mapping) {
+  return new Promise(function (resolve, reject) {
+    readable(JSON.stringify(mapping))
+      .pipe(bpack())
+      .on('error', reject)
+      .pipe(concat({ encoding: 'string' }, resolve));
+  });
 }
