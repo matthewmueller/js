@@ -23,7 +23,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.isTrue(exec(file.contents));
+        assert.isTrue(exec(file));
       });
   });
 
@@ -35,7 +35,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.isTrue(exec(file.contents));
+        assert.isTrue(exec(file));
       });
   });
 
@@ -47,7 +47,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.isTrue(exec(file.contents));
+        assert.isTrue(exec(file));
       });
   });
 
@@ -59,7 +59,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.isTrue(exec(file.contents));
+        assert.isTrue(exec(file));
       });
   });
 
@@ -71,7 +71,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.strictEqual(exec(file.contents), '.js');
+        assert.strictEqual(exec(file), '.js');
       });
   });
 
@@ -83,7 +83,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        let exported = exec(file.contents);
+        let exported = exec(file);
         assert.strictEqual(exported.global.test, 'test');
         assert.strictEqual(exported.Buffer.name, Buffer.name);
         assert.strictEqual(exported.isBuffer.name, Buffer.isBuffer.name);
@@ -98,7 +98,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.strictEqual(exec(file.contents), 'test');
+        assert.strictEqual(exec(file), 'test');
         delete process.env.TEST;
       });
   });
@@ -116,7 +116,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(fixture('subentries/index.js'));
-        assert.strictEqual(exec(file.contents), 'nested');
+        assert.strictEqual(exec(file), 'nested');
       });
   });
 
@@ -139,7 +139,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (tree) {
         let file = tree.getFile(entry);
-        assert.strictEqual(exec(file.contents), 'hi from a text file!');
+        assert.strictEqual(exec(file), 'hi from a text file!');
       });
   });
 
@@ -156,7 +156,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (tree) {
             let file = tree.getFile(entry);
-            assert.isTrue(exec(file.contents));
+            assert.isTrue(exec(file));
           });
       });
 
@@ -169,7 +169,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (tree) {
             let file = tree.getFile(entry);
-            assert.isTrue(exec(file.contents));
+            assert.isTrue(exec(file));
           });
       });
     });
@@ -183,7 +183,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (tree) {
             let file = tree.getFile(entry);
-            assert.isTrue(exec(file.contents));
+            assert.isTrue(exec(file));
           });
       });
     });
@@ -207,7 +207,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (tree) {
             let code = tree.getFile(entry);
-            assert.strictEqual(exec(code.contents), 4);
+            assert.strictEqual(exec(code), 4);
           });
       });
 
@@ -229,7 +229,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (tree) {
             let code = tree.getFile(entry);
-            assert.strictEqual(exec(code.contents), 4);
+            assert.strictEqual(exec(code), 4);
           });
       });
     });
@@ -239,11 +239,11 @@ describe('js plugin', function () {
 /**
  * Executes the given code, returning it's return value.
  *
- * @param {String} code  The source code to run. (ie: the result of a build)
+ * @param {String} file  The file from the build tree to execute.
  * @return {*}
  */
-function exec(code) {
-  return vm.runInNewContext(code)(1);
+function exec(file) {
+  return vm.runInNewContext(file.contents)(file.id);
 }
 
 /**
