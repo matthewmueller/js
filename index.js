@@ -77,7 +77,9 @@ module.exports = function (options) {
    * @param {File} file  The current file being processed.
    */
   function check(file) {
+    file.time('js:syntax');
     var err = syntax(file.contents, file.path);
+    file.timeEnd('js:syntax');
     if (err) throw err;
   }
 
@@ -88,16 +90,17 @@ module.exports = function (options) {
    * @param {File} file     The current file being processed.
    * @param {Tree} tree     The build tree.
    * @param {Builder} mako  The mako builder instance.
-   * @return {Promise}
    */
   function* npm(file) {
+    file.time('js:resolve');
+
     file.deps = Object.create(null);
 
     // include node globals and environment variables
     file.contents = yield postprocess(file, config.root);
 
     // traverse dependencies
-    return yield Promise.all(deps(file.contents, 'js').map(function (dep) {
+    yield Promise.all(deps(file.contents, 'js').map(function (dep) {
       return new Promise(function (accept, reject) {
         let options = extend(config.resolveOptions, {
           filename: file.path,
@@ -118,6 +121,8 @@ module.exports = function (options) {
         });
       });
     }));
+
+    file.timeEnd('js:resolve');
   }
 
   /**
@@ -129,6 +134,8 @@ module.exports = function (options) {
    * @param {Builder} mako  The mako builder instance.
    */
   function* pack(file, tree) {
+    file.time('js:pack');
+
     let mapping = getMapping(tree);
     let root = isRoot(file);
 
@@ -155,6 +162,8 @@ module.exports = function (options) {
         map.contents = results.map;
       }
     }
+
+    file.timeEnd('js:pack');
   }
 
   /**
