@@ -21,8 +21,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.isTrue(exec(file));
       });
   });
@@ -33,8 +33,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.isTrue(exec(file));
       });
   });
@@ -45,8 +45,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.isTrue(exec(file));
       });
   });
@@ -57,8 +57,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.isTrue(exec(file));
       });
   });
@@ -69,8 +69,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.strictEqual(exec(file), '.js');
       });
   });
@@ -81,8 +81,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         let exported = exec(file);
         assert.strictEqual(exported.global.test, 'test');
         assert.strictEqual(exported.Buffer.name, Buffer.name);
@@ -96,8 +96,8 @@ describe('js plugin', function () {
     return mako()
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.strictEqual(exec(file), 'test');
         delete process.env.TEST;
       });
@@ -114,8 +114,8 @@ describe('js plugin', function () {
       })
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(fixture('subentries/index.js'));
+      .then(function (build) {
+        let file = build.tree.getFile(fixture('subentries/index.js'));
         assert.strictEqual(exec(file), 'nested');
       });
   });
@@ -137,8 +137,8 @@ describe('js plugin', function () {
       })
       .use(plugins())
       .build(entry)
-      .then(function (tree) {
-        let file = tree.getFile(entry);
+      .then(function (build) {
+        let file = build.tree.getFile(entry);
         assert.strictEqual(exec(file), 'hi from a text file!');
       });
   });
@@ -154,8 +154,8 @@ describe('js plugin', function () {
           .postread('es', file => file.type = 'js')
           .use(plugins({ extensions: [ '.es' ] }))
           .build(entry)
-          .then(function (tree) {
-            let file = tree.getFile(entry);
+          .then(function (build) {
+            let file = build.tree.getFile(entry);
             assert.isTrue(exec(file));
           });
       });
@@ -167,8 +167,8 @@ describe('js plugin', function () {
           .postread('es', file => file.type = 'js')
           .use(plugins({ extensions: '.es' }))
           .build(entry)
-          .then(function (tree) {
-            let file = tree.getFile(entry);
+          .then(function (build) {
+            let file = build.tree.getFile(entry);
             assert.isTrue(exec(file));
           });
       });
@@ -181,8 +181,8 @@ describe('js plugin', function () {
         return mako()
           .use(plugins({ resolveOptions: { moduleDirectory: 'npm' } }))
           .build(entry)
-          .then(function (tree) {
-            let file = tree.getFile(entry);
+          .then(function (build) {
+            let file = build.tree.getFile(entry);
             assert.isTrue(exec(file));
           });
       });
@@ -194,8 +194,8 @@ describe('js plugin', function () {
         return mako()
           .use(plugins({ sourceMaps: 'inline' }))
           .build(entry)
-          .then(function (tree) {
-            let code = tree.getFile(entry);
+          .then(function (build) {
+            let code = build.tree.getFile(entry);
             assert(convert.fromSource(code.contents), 'should have an inline source-map');
           });
       });
@@ -205,8 +205,8 @@ describe('js plugin', function () {
         return mako()
           .use(plugins({ sourceMaps: 'inline' }))
           .build(entry)
-          .then(function (tree) {
-            let code = tree.getFile(entry);
+          .then(function (build) {
+            let code = build.tree.getFile(entry);
             assert.strictEqual(exec(code), 4);
           });
       });
@@ -216,8 +216,8 @@ describe('js plugin', function () {
         return mako()
           .use(plugins({ sourceMaps: true }))
           .build(entry)
-          .then(function (tree) {
-            let map = tree.getFile(entry + '.map');
+          .then(function (build) {
+            let map = build.tree.getFile(entry + '.map');
             assert(convert.fromJSON(map.contents), 'should be a valid source-map file');
           });
       });
@@ -227,8 +227,8 @@ describe('js plugin', function () {
         return mako()
           .use(plugins({ sourceMaps: true }))
           .build(entry)
-          .then(function (tree) {
-            let code = tree.getFile(entry);
+          .then(function (build) {
+            let code = build.tree.getFile(entry);
             assert.strictEqual(exec(code), 4);
           });
       });

@@ -74,12 +74,14 @@ module.exports = function (options) {
    * dependencies. This will give a better error than simply dropping into
    * file-deps.
    *
-   * @param {File} file  The current file being processed.
+   * @param {File} file    The current file being processed.
+   * @param {Tree} tree    The current build tree.
+   * @param {Build} build  The current build.
    */
-  function check(file) {
-    file.time('js:syntax');
+  function check(file, tree, build) {
+    let timer = build.time('js:syntax');
     var err = syntax(file.contents, file.path);
-    file.timeEnd('js:syntax');
+    timer();
     if (err) throw err;
   }
 
@@ -87,12 +89,12 @@ module.exports = function (options) {
    * Mako dependencies hook that parses a JS file for `require` statements,
    * resolving them to absolute paths and adding them as dependencies.
    *
-   * @param {File} file     The current file being processed.
-   * @param {Tree} tree     The build tree.
-   * @param {Builder} mako  The mako builder instance.
+   * @param {File} file    The current file being processed.
+   * @param {Tree} tree    The current build tree.
+   * @param {Build} build  The current build.
    */
-  function* npm(file) {
-    file.time('js:resolve');
+  function* npm(file, tree, build) {
+    let timer = build.time('js:resolve');
 
     file.deps = Object.create(null);
 
@@ -122,19 +124,19 @@ module.exports = function (options) {
       });
     }));
 
-    file.timeEnd('js:resolve');
+    timer();
   }
 
   /**
    * Mako prewrite hook that packs all JS entry files into a single file. (also
    * removes all dependencies from the build tree)
    *
-   * @param {File} file     The current file being processed.
-   * @param {Tree} tree     The build tree.
-   * @param {Builder} mako  The mako builder instance.
+   * @param {File} file    The current file being processed.
+   * @param {Tree} tree    The current build tree.
+   * @param {Build} build  The current build.
    */
-  function* pack(file, tree) {
-    file.time('js:pack');
+  function* pack(file, tree, build) {
+    let timer = build.time('js:pack');
 
     let mapping = getMapping(tree);
     let root = isRoot(file);
@@ -163,7 +165,7 @@ module.exports = function (options) {
       }
     }
 
-    file.timeEnd('js:pack');
+    timer();
   }
 
   /**
