@@ -1,4 +1,9 @@
 
+0.13.1 / 2016-01-28
+===================
+
+  * fixing external source maps and adding test to prevent regression
+
 0.13.0 / 2016-01-24
 ===================
 
