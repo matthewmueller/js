@@ -211,7 +211,7 @@ describe('js plugin', function () {
           });
       });
 
-      it('should include an external source-map', function () {
+      it('should add an external source-map to the build', function () {
         let entry = fixture('source-maps/index.js');
         return mako()
           .use(plugins({ sourceMaps: true }))
@@ -219,6 +219,17 @@ describe('js plugin', function () {
           .then(function (build) {
             let map = build.tree.getFile(entry + '.map');
             assert(convert.fromJSON(map.contents), 'should be a valid source-map file');
+          });
+      });
+
+      it('should include a link to the external source-map', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: true }))
+          .build(entry)
+          .then(function (build) {
+            let file = build.tree.getFile(entry);
+            assert.isTrue(convert.mapFileCommentRegex.test(file.contents));
           });
       });
 

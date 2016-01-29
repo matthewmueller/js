@@ -162,6 +162,7 @@ module.exports = function (options) {
       if (results.map) {
         let map = file.addDependency(file.path + '.map');
         map.contents = results.map;
+        file.contents += `//# sourceMappingURL=${path.basename(file.path)}.map`;
       }
     }
 
