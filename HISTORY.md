@@ -1,4 +1,9 @@
 
+0.13.2 / 2016-02-01
+===================
+
+  * adding a default source root which should provide a better default devx
+
 0.13.1 / 2016-01-28
 ===================
 
