@@ -1,0 +1,11 @@
+{
+  "entries": [ "index.html", "index.js" ],
+  "plugins": [
+    [ "mako-stat", [ "html", "js" ] ],
+    [ "mako-text", "js" ],
+    [ "..", { "sourceMaps": true, "root": ".." } ],
+    [ "mako-output", [ "html", "js", "map" ] ],
+    [ "mako-copy", "html" ],
+    [ "mako-write", [ "js", "map" ] ]
+  ]
+}

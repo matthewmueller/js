@@ -24,7 +24,8 @@ const defaults = {
   extensions: [],
   resolveOptions: null,
   root: pwd,
-  sourceMaps: false
+  sourceMaps: false,
+  sourceRoot: 'file://mako'
 };
 
 // memory-efficient way of tracking mappings per-build
@@ -154,7 +155,10 @@ module.exports = function (options) {
       tree.removeFile(file.path);
     } else {
       debug('packing %s', relative(file.path));
-      let results = yield doPack(values(mapping), config.sourceMaps);
+      let sourceMaps = config.sourceMaps;
+      let sourceRoot = config.sourceRoot;
+      let root = config.root;
+      let results = yield doPack(values(mapping), sourceMaps, sourceRoot, root);
 
       file.contents = results.code;
 
@@ -257,31 +261,48 @@ function isRoot(file) {
  *
  * @param {Array} mapping              The code mapping (see module-deps)
  * @param {Boolean|String} sourceMaps  Whether to include source-maps
+ * @param {String} sourceRoot          The root url for the source-maps
+ * @param {String} root                The build root
  * @return {Object}
  */
-function* doPack(mapping, sourceMaps) {
-  let code = yield runBrowserPack(mapping);
+function* doPack(mapping, sourceMaps, sourceRoot, root) {
+  let code = yield runBrowserPack(mapping, root);
+  let map = convert.fromSource(code);
+  code = convert.removeComments(code);
 
-  if (!sourceMaps) {
-    return { code: code, map: null };
-  } else if (sourceMaps === 'inline') {
-    return { code: code, map: null };
+  if (map) {
+    map.setProperty('sourceRoot', sourceRoot);
   }
 
-  let map = convert.fromSource(code);
-  return { code: convert.removeComments(code), map: map.toJSON() };
+  if (sourceMaps === 'inline') {
+    return {
+      code: `${code}\n${map.toComment()}`,
+      map: null
+    };
+  } else if (sourceMaps) {
+    return {
+      code: code,
+      map: map.toJSON()
+    };
+  }
+
+  return {
+    code: code,
+    map: null
+  };
 }
 
 /**
  * Run the code through browser-pack, which only does an inline source map.
  *
  * @param {Array} mapping  The code mapping (see module-deps)
+ * @param {String} root    The build root
  * @return {Promise}
  */
-function runBrowserPack(mapping) {
+function runBrowserPack(mapping, root) {
   return new Promise(function (resolve, reject) {
     readable(JSON.stringify(mapping))
-      .pipe(bpack())
+      .pipe(bpack({ basedir: root }))
       .on('error', reject)
       .pipe(concat({ encoding: 'string' }, resolve));
   });
