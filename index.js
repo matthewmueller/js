@@ -186,7 +186,7 @@ module.exports = function (options) {
       deps: file.deps || {},
       source: file.contents,
       sourceFile: config.sourceMaps ? file.id : null,
-      entry: file.isEntry()
+      entry: isRoot(file)
     };
   }
 };

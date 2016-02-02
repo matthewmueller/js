@@ -116,6 +116,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.getFile(fixture('subentries/index.js'));
+        assert.include(file.contents, '{},["test/fixtures/subentries/index.js"]);');
         assert.strictEqual(exec(file), 'nested');
       });
   });
