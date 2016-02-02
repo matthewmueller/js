@@ -1,4 +1,9 @@
 
+0.13.3 / 2016-02-01
+===================
+
+  * fix support for sub-entries after browser-pack change
+
 0.13.2 / 2016-02-01
 ===================
 
