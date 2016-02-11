@@ -144,6 +144,30 @@ describe('js plugin', function () {
       });
   });
 
+  context('circular dependencies', function () {
+    it('should work with the node docs example', function () {
+      let entry = fixture('circular-deps/index.js');
+      return mako()
+        .use(plugins())
+        .build(entry)
+        .then(function (build) {
+          let file = build.tree.getFile(entry);
+          assert.isTrue(exec(file));
+        });
+    });
+
+    it('should work with the more common example', function () {
+      let entry = fixture('circular-deps-2/index.js');
+      return mako()
+        .use(plugins())
+        .build(entry)
+        .then(function (build) {
+          let file = build.tree.getFile(entry);
+          assert.strictEqual(exec(file), 'a');
+        });
+    });
+  });
+
   context('with options', function () {
     // TODO .root
 
