@@ -1,4 +1,10 @@
 
+0.14.0 / 2016-02-10
+===================
+
+  * adding tests for circular deps
+  * update mako core and dev deps
+
 0.13.3 / 2016-02-01
 ===================
 
