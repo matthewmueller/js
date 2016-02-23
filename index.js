@@ -13,6 +13,7 @@ let insertGlobals = require('insert-module-globals');
 let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
+let sourcemaps = require('mako-sourcemaps');
 let syntax = require('syntax-error');
 let values = require('object-values');
 
@@ -50,6 +51,10 @@ module.exports = function (options) {
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
     mako.postdependencies([ 'js', 'json' ], pack);
+
+    if (config.sourceMaps) {
+      mako.use(sourcemaps('js', { inline: config.sourceMaps === 'inline' }));
+    }
   };
 
   /**
@@ -161,13 +166,7 @@ module.exports = function (options) {
       let results = yield doPack(values(mapping), sourceMaps, sourceRoot, root);
 
       file.contents = results.code;
-
-      // if we have a map here, that means it's going to be an external file
-      if (results.map) {
-        let map = file.addDependency(file.path + '.map');
-        map.contents = results.map;
-        file.contents += `//# sourceMappingURL=${path.basename(file.path)}.map`;
-      }
+      file.sourcemap = results.map;
     }
 
     timer();
@@ -268,27 +267,12 @@ function isRoot(file) {
 function* doPack(mapping, sourceMaps, sourceRoot, root) {
   let code = yield runBrowserPack(mapping, root);
   let map = convert.fromSource(code);
-  code = convert.removeComments(code);
 
-  if (map) {
-    map.setProperty('sourceRoot', sourceRoot);
-  }
-
-  if (sourceMaps === 'inline') {
-    return {
-      code: `${code}\n${map.toComment()}`,
-      map: null
-    };
-  } else if (sourceMaps) {
-    return {
-      code: code,
-      map: map.toJSON()
-    };
-  }
+  if (map) map.setProperty('sourceRoot', sourceRoot);
 
   return {
-    code: code,
-    map: null
+    code: convert.removeComments(code),
+    map: sourceMaps ? map.toObject() : null
   };
 }
 
