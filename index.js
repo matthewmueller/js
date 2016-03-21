@@ -163,7 +163,7 @@ module.exports = function (options) {
       let sourceMaps = config.sourceMaps;
       let sourceRoot = config.sourceRoot;
       let root = config.root;
-      let results = yield doPack(values(mapping), sourceMaps, sourceRoot, root);
+      let results = yield doPack(sort(values(mapping)), sourceMaps, sourceRoot, root);
 
       file.contents = results.code;
       file.sourcemap = results.map;
@@ -200,6 +200,19 @@ function extend() {
   var sources = [].slice.call(arguments);
   var args = [ Object.create(null) ].concat(sources);
   return Object.assign.apply(null, args);
+}
+
+/**
+ * Sort the dependencies
+ *
+ * @param {Array} deps
+ * @return {Array}
+ */
+
+function sort(deps) {
+  return deps.sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
 }
 
 /**
