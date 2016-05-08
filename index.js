@@ -205,10 +205,9 @@ function extend() {
 /**
  * Sort the dependencies
  *
- * @param {Array} deps
+ * @param {Array} deps  The deps to sort. (with id props)
  * @return {Array}
  */
-
 function sort(deps) {
   return deps.sort(function (a, b) {
     return a.id < b.id ? -1 : 1;
