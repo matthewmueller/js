@@ -14,6 +14,7 @@ let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 let sourcemaps = require('mako-sourcemaps');
+let streamify = require('stream-array');
 let syntax = require('syntax-error');
 let values = require('object-values');
 
@@ -297,8 +298,8 @@ function* doPack(mapping, sourceMaps, sourceRoot, root) {
  */
 function runBrowserPack(mapping, root) {
   return new Promise(function (resolve, reject) {
-    readable(JSON.stringify(mapping))
-      .pipe(bpack({ basedir: root }))
+    streamify(mapping)
+      .pipe(bpack({ basedir: root, raw: true }))
       .on('error', reject)
       .pipe(concat({ encoding: 'string' }, resolve));
   });
