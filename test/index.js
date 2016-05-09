@@ -144,6 +144,25 @@ describe('js plugin', function () {
       });
   });
 
+  context('multiple entries', function () {
+    it('should not smush multiple entries together', function () {
+      let entries = [
+        fixture('multiple-entries/a.js'),
+        fixture('multiple-entries/b.js')
+      ];
+
+      return mako()
+        .use(plugins())
+        .build(entries)
+        .then(function (build) {
+          let a = build.tree.getFile(entries[0]);
+          assert.strictEqual(exec(a), 4);
+          let b = build.tree.getFile(entries[1]);
+          assert.strictEqual(exec(b), 5);
+        });
+    });
+  });
+
   context('circular dependencies', function () {
     it('should work with the node docs example', function () {
       let entry = fixture('circular-deps/index.js');
