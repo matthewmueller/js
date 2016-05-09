@@ -1,4 +1,10 @@
 
+0.15.3 / 2016-05-08
+===================
+
+  * roll up mappings during postdependencies (fixes #19)
+  * perf: avoid json encoding entire mapping to build
+
 0.15.2 / 2016-03-21
 ===================
 
