@@ -30,9 +30,6 @@ const defaults = {
   sourceRoot: 'file://mako'
 };
 
-// memory-efficient way of tracking mappings per-build
-const mappings = new WeakMap();
-
 /**
  * Initialize the mako js plugin.
  *
@@ -144,16 +141,14 @@ module.exports = function (options) {
    */
   function* pack(file, tree, build) {
     let timer = build.time('js:pack');
-
-    let mapping = getMapping(tree);
     let root = isRoot(file);
+    let dep = prepare(file);
 
-    // add this file to the mapping
-    mapping[file.id] = prepare(file);
-
-    // remove the dependency links for the direct dependants
-    file.dependants().forEach(function (parent) {
-      tree.removeDependency(parent, file.path);
+    // remove the dependency links for the direct dependants and merge their
+    // mappings as we roll up
+    file.dependants({ objects: true }).forEach(function (parent) {
+      Object.assign(initMapping(parent, dep), file.mapping);
+      tree.removeDependency(parent.path, file.path);
     });
 
     // only leave the entry files behind
@@ -161,10 +156,11 @@ module.exports = function (options) {
       tree.removeFile(file.path);
     } else {
       debug('packing %s', relative(file.path));
+      let mapping = sort(values(initMapping(file, dep)));
       let sourceMaps = config.sourceMaps;
       let sourceRoot = config.sourceRoot;
       let root = config.root;
-      let results = yield doPack(sort(values(mapping)), sourceMaps, sourceRoot, root);
+      let results = yield doPack(mapping, sourceMaps, sourceRoot, root);
 
       file.contents = results.code;
       file.sourcemap = results.map;
@@ -188,6 +184,20 @@ module.exports = function (options) {
       sourceFile: config.sourceMaps ? file.id : null,
       entry: isRoot(file)
     };
+  }
+
+  /**
+   * Helper for initializing a browserify-compatible file mapping. (without
+   * clobbering an existing one)
+   *
+   * @param {File} file   The file object to add a mapping property to.
+   * @param {Object} dep  The mapping entry to initialize with.
+   * @return {Object}     The new/existing mapping.
+   */
+  function initMapping(file, dep) {
+    if (!file.mapping) file.mapping = Object.create(null);
+    file.mapping[dep.id] = dep;
+    return file.mapping;
   }
 };
 
@@ -231,20 +241,6 @@ function postprocess(file, root) {
       .on('error', reject)
       .pipe(concat({ encoding: 'string' }, resolve));
   });
-}
-
-/**
- * Retrieve the mapping for this build tree, create one if necessary.
- *
- * @param {Tree} tree  The build tree to use as the key.
- * @return {Object}
- */
-function getMapping(tree) {
-  if (!mappings.has(tree)) {
-    mappings.set(tree, Object.create(null));
-  }
-
-  return mappings.get(tree);
 }
 
 /**
