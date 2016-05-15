@@ -21,8 +21,11 @@ let values = require('object-values');
 const pwd = process.cwd();
 const relative = abs => path.relative(pwd, abs);
 
+const bundles = new WeakMap();
+
 // default plugin configuration
 const defaults = {
+  bundle: false,
   extensions: [],
   resolveOptions: null,
   root: pwd,
@@ -48,6 +51,12 @@ module.exports = function (options) {
     mako.predependencies([ 'js', 'json' ], id);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
+
+    if (config.bundle) {
+      mako.postdependencies([ 'js', 'json' ], group);
+      mako.prewrite('js', bundle);
+    }
+
     mako.postdependencies([ 'js', 'json' ], pack);
 
     if (config.sourceMaps) {
@@ -132,6 +141,34 @@ module.exports = function (options) {
   }
 
   /**
+   * Inspects each file in the tree to see if it is a candidate for adding to
+   * the shared bundle.
+   *
+   * Currently, a file is considered shared if it imported by more than 1 file.
+   * This threshold will eventually be configurable.
+   *
+   * When a file is determined to be shared, all of it's dependencies will also
+   * be included implicitly.
+   *
+   * @param {File} file    The current file being processed.
+   * @param {Tree} tree    The current build tree.
+   * @param {Build} build  The current build.
+   */
+  function group(file, tree, build) {
+    let timer = build.time('js:bundle');
+
+    if (tree.graph.outDegree(file.path) > 1) {
+      file.bundle = true;
+
+      file.dependencies({ recursive: true }).forEach(file => {
+        file.bundle = true;
+      });
+    }
+
+    timer();
+  }
+
+  /**
    * Mako prewrite hook that packs all JS entry files into a single file. (also
    * removes all dependencies from the build tree)
    *
@@ -143,11 +180,13 @@ module.exports = function (options) {
     let timer = build.time('js:pack');
     let root = isRoot(file);
     let dep = prepare(file);
+    let bundle = config.bundle ? getBundle(tree) : null;
+    if (file.bundle) bundle[file.id] = dep;
 
     // remove the dependency links for the direct dependants and merge their
     // mappings as we roll up
     file.dependants({ objects: true }).forEach(function (parent) {
-      Object.assign(initMapping(parent, dep), file.mapping);
+      Object.assign(initMapping(parent, bundle ? null : dep), file.mapping);
       tree.removeDependency(parent.path, file.path);
     });
 
@@ -157,16 +196,33 @@ module.exports = function (options) {
     } else {
       debug('packing %s', relative(file.path));
       let mapping = sort(values(initMapping(file, dep)));
-      let sourceMaps = config.sourceMaps;
-      let sourceRoot = config.sourceRoot;
-      let root = config.root;
-      let results = yield doPack(mapping, sourceMaps, sourceRoot, root);
+      let results = yield doPack(mapping, config);
 
       file.contents = results.code;
       file.sourcemap = results.map;
     }
 
     timer();
+  }
+
+  /**
+   * Takes the shared bundle (if one was added for this build) and generates
+   * it's content.
+   *
+   * @param {File} file    The current file being processed.
+   * @param {Tree} tree    The current build tree.
+   * @param {Build} build  The current build.
+   */
+  function* bundle(file, tree) {
+    let bundlePath = path.resolve(config.root, config.bundle);
+    if (tree.hasFile(bundlePath)) return;
+
+    let bundle = tree.addFile(bundlePath);
+    let mapping = sort(values(getBundle(tree)));
+    let results = yield doPack(mapping, config);
+
+    bundle.contents = results.code;
+    bundle.sourcemap = results.map;
   }
 
   /**
@@ -196,7 +252,7 @@ module.exports = function (options) {
    */
   function initMapping(file, dep) {
     if (!file.mapping) file.mapping = Object.create(null);
-    file.mapping[dep.id] = dep;
+    if (dep) file.mapping[dep.id] = dep;
     return file.mapping;
   }
 };
@@ -267,36 +323,51 @@ function isRoot(file) {
  * Perform the actual pack, which converts the mapping into an object with
  * the output code and map.
  *
- * @param {Array} mapping              The code mapping (see module-deps)
- * @param {Boolean|String} sourceMaps  Whether to include source-maps
- * @param {String} sourceRoot          The root url for the source-maps
- * @param {String} root                The build root
+ * @param {Array} mapping  The code mapping. (see module-deps)
+ * @param {Object} config  The plugin configuration.
  * @return {Object}
  */
-function* doPack(mapping, sourceMaps, sourceRoot, root) {
-  let code = yield runBrowserPack(mapping, root);
+function* doPack(mapping, config) {
+  let bpack = config.bundle ? { hasExports: true } : null;
+  let code = yield runBrowserPack(mapping, config.root, bpack);
   let map = convert.fromSource(code);
 
-  if (map) map.setProperty('sourceRoot', sourceRoot);
+  if (map) map.setProperty('sourceRoot', config.sourceRoot);
 
   return {
     code: convert.removeComments(code),
-    map: sourceMaps ? map.toObject() : null
+    map: config.sourceMaps ? map.toObject() : null
   };
 }
 
 /**
  * Run the code through browser-pack, which only does an inline source map.
  *
- * @param {Array} mapping  The code mapping (see module-deps)
- * @param {String} root    The build root
+ * @param {Array} mapping     The code mapping (see module-deps)
+ * @param {String} root       The build root
+ * @param {Object} [options]  Additional options to pass to browser-pack
  * @return {Promise}
  */
-function runBrowserPack(mapping, root) {
+function runBrowserPack(mapping, root, options) {
   return new Promise(function (resolve, reject) {
     streamify(mapping)
-      .pipe(bpack({ basedir: root, raw: true }))
+      .pipe(bpack(Object.assign({ basedir: root, raw: true }, options)))
       .on('error', reject)
       .pipe(concat({ encoding: 'string' }, resolve));
   });
+}
+
+/**
+ * Uses the build tree as a key for init/getting a bundle mapping. (this works
+ * because each assemble has it's own build/tree)
+ *
+ * @param {Tree} tree  The build tree to use as the key.
+ * @return {Object}
+ */
+function getBundle(tree) {
+  if (!bundles.has(tree)) {
+    bundles.set(tree, Object.create(null));
+  }
+
+  return bundles.get(tree);
 }

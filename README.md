@@ -44,6 +44,7 @@ Create a new plugin instance, with the following `options` available:
  - `sourceMaps` specify `true` for external source-maps or `"inline"` for inline source-maps (default: `false`)
  - `root` the root for the project, paths will be set relative to here (default: `pwd`)
  - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json` (eg: `.coffee`)
+ - `bundle` if set, should be a pathname (relative to `root`) that specifies an extra file to put shared dependencies in
  - `resolveOptions` additional options to be passed to [resolve](https://www.npmjs.com/package/resolve)
 
 ## Dependencies
@@ -55,6 +56,6 @@ Create a new plugin instance, with the following `options` available:
 During **analyze**, this will parse JS files for `require(...)` statements for dependencies, then
 resolving them via [resolve](https://www.npmjs.com/package/resolve).
 
-During **build**, each _entry_ JS file will have all of it's dependencies bundled into a single
+During **assemble**, each _entry_ JS file will have all of it's dependencies bundled into a single
 file. Along the way, those dependencies will be _removed_ from the tree, leaving only the output
 files behind.

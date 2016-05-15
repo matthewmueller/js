@@ -288,17 +288,90 @@ describe('js plugin', function () {
           });
       });
     });
+
+    context('.bundle', function () {
+      it('should add a shared js file', function () {
+        let entries = [
+          fixture('bundle/a.js'),
+          fixture('bundle/b.js')
+        ];
+
+        return mako()
+          .use(plugins({ bundle: fixture('bundle/shared.js') }))
+          .build(entries)
+          .then(function (build) {
+            assert.isTrue(build.tree.hasFile(fixture('bundle/shared.js')));
+          });
+      });
+
+      it('should introduce a global require var in the shared js', function () {
+        let entries = [
+          fixture('bundle/a.js'),
+          fixture('bundle/b.js')
+        ];
+
+        return mako()
+          .use(plugins({ bundle: fixture('bundle/shared.js') }))
+          .build(entries)
+          .then(function (build) {
+            let file = build.tree.getFile(fixture('bundle/shared.js'));
+            let ctx = vm.createContext();
+            exec(file, ctx);
+            assert.isFunction(ctx.require);
+          });
+      });
+
+      it('should fail to run the normal entries without the shared js', function () {
+        let entries = [
+          fixture('bundle/a.js'),
+          fixture('bundle/b.js')
+        ];
+
+        return mako()
+          .use(plugins({ bundle: fixture('bundle/shared.js') }))
+          .build(entries)
+          .then(function (build) {
+            let file = build.tree.getFile(fixture('bundle/a.js'));
+            assert.throws(() => exec(file));
+          });
+      });
+
+      it('should correctly run shared + entry', function () {
+        let entries = [
+          fixture('bundle/a.js'),
+          fixture('bundle/b.js')
+        ];
+
+        return mako()
+          .use(plugins({ bundle: fixture('bundle/shared.js') }))
+          .build(entries)
+          .then(function (build) {
+            let shared = build.tree.getFile(fixture('bundle/shared.js'));
+            let a = build.tree.getFile(fixture('bundle/a.js'));
+            let b = build.tree.getFile(fixture('bundle/b.js'));
+            let ctx = vm.createContext();
+            exec(shared, ctx);
+            assert.strictEqual(exec(a, ctx), 4);
+            assert.strictEqual(exec(b, ctx), 5);
+          });
+      });
+    });
   });
 });
 
 /**
  * Executes the given code, returning it's return value.
  *
- * @param {String} file  The file from the build tree to execute.
+ * @param {String} file   The file from the build tree to execute.
+ * @param {Object} [ctx]  An optional vm context to use
  * @return {*}
  */
-function exec(file) {
-  return vm.runInNewContext(file.contents)(file.id);
+function exec(file, ctx) {
+  let exported = ctx
+    ? vm.runInContext(file.contents, ctx)
+    : vm.runInNewContext(file.contents);
+
+  return file.id ? exported(file.id) : exported;
 }
 
 /**
