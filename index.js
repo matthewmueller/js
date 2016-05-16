@@ -20,7 +20,6 @@ let values = require('object-values');
 
 const pwd = process.cwd();
 const relative = abs => path.relative(pwd, abs);
-
 const bundles = new WeakMap();
 
 // default plugin configuration
@@ -180,6 +179,7 @@ module.exports = function (options) {
     let timer = build.time('js:pack');
     let root = isRoot(file);
     let dep = prepare(file);
+
     let bundle = config.bundle ? getBundle(tree) : null;
     if (file.bundle) bundle[file.id] = dep;
 

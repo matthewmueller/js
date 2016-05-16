@@ -6,6 +6,7 @@
 [![npm dependencies](https://img.shields.io/david/makojs/js.svg)](https://david-dm.org/makojs/js)
 [![npm dev dependencies](https://img.shields.io/david/dev/makojs/js.svg)](https://david-dm.org/makojs/js#info=devDependencies)
 [![build status](https://img.shields.io/travis/makojs/js.svg)](https://travis-ci.org/makojs/js)
+[![coverage](https://img.shields.io/coveralls/makojs/js.svg)](https://coveralls.io/github/makojs/js)
 
 ## Usage
 
