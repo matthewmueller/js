@@ -1,4 +1,10 @@
 
+0.16.0 / 2016-05-15
+===================
+
+  * chore(package): update dependencies
+  * adding bundle support (fixes #14)
+
 0.15.3 / 2016-05-08
 ===================
 
