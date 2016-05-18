@@ -1,4 +1,11 @@
 
+0.17.0 / 2016-05-17
+===================
+
+  * removing mako-sourcemaps, delegating to plugin bundles to add (fixes #23)
+  * adding coverage testing
+  * chore(package): update mako-copy to version 0.9.0
+
 0.16.0 / 2016-05-15
 ===================
 
