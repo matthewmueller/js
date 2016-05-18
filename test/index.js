@@ -233,50 +233,6 @@ describe('js plugin', function () {
     });
 
     context('.sourceMaps', function () {
-      it('should include an inline source-map', function () {
-        let entry = fixture('source-maps/index.js');
-        return mako()
-          .use(plugins({ sourceMaps: 'inline' }))
-          .build(entry)
-          .then(function (build) {
-            let code = build.tree.getFile(entry);
-            assert(convert.fromSource(code.contents), 'should have an inline source-map');
-          });
-      });
-
-      it('should not break the original code', function () {
-        let entry = fixture('source-maps/index.js');
-        return mako()
-          .use(plugins({ sourceMaps: 'inline' }))
-          .build(entry)
-          .then(function (build) {
-            let code = build.tree.getFile(entry);
-            assert.strictEqual(exec(code), 4);
-          });
-      });
-
-      it('should add an external source-map to the build', function () {
-        let entry = fixture('source-maps/index.js');
-        return mako()
-          .use(plugins({ sourceMaps: true }))
-          .build(entry)
-          .then(function (build) {
-            let map = build.tree.getFile(entry + '.map');
-            assert(convert.fromJSON(map.contents), 'should be a valid source-map file');
-          });
-      });
-
-      it('should include a link to the external source-map', function () {
-        let entry = fixture('source-maps/index.js');
-        return mako()
-          .use(plugins({ sourceMaps: true }))
-          .build(entry)
-          .then(function (build) {
-            let file = build.tree.getFile(entry);
-            assert.isTrue(convert.mapFileCommentRegex.test(file.contents));
-          });
-      });
-
       it('should not break the original code', function () {
         let entry = fixture('source-maps/index.js');
         return mako()
@@ -285,6 +241,17 @@ describe('js plugin', function () {
           .then(function (build) {
             let code = build.tree.getFile(entry);
             assert.strictEqual(exec(code), 4);
+          });
+      });
+
+      it('should generate file.sourcemap', function () {
+        let entry = fixture('source-maps/index.js');
+        return mako()
+          .use(plugins({ sourceMaps: true }))
+          .build(entry)
+          .then(function (build) {
+            let code = build.tree.getFile(entry);
+            assert(convert.fromObject(code.sourcemap), 'should have a source-map object');
           });
       });
     });
