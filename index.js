@@ -13,7 +13,6 @@ let insertGlobals = require('insert-module-globals');
 let path = require('path');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
-let sourcemaps = require('mako-sourcemaps');
 let streamify = require('stream-array');
 let syntax = require('syntax-error');
 let values = require('object-values');
@@ -57,10 +56,6 @@ module.exports = function (options) {
     }
 
     mako.postdependencies([ 'js', 'json' ], pack);
-
-    if (config.sourceMaps) {
-      mako.use(sourcemaps('js', { inline: config.sourceMaps === 'inline' }));
-    }
   };
 
   /**

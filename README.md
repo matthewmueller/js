@@ -42,11 +42,12 @@ mako()
 
 Create a new plugin instance, with the following `options` available:
 
- - `sourceMaps` specify `true` for external source-maps or `"inline"` for inline source-maps (default: `false`)
- - `root` the root for the project, paths will be set relative to here (default: `pwd`)
- - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json` (eg: `.coffee`)
  - `bundle` if set, should be a pathname (relative to `root`) that specifies an extra file to put shared dependencies in
+ - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json` (eg: `.coffee`)
  - `resolveOptions` additional options to be passed to [resolve](https://www.npmjs.com/package/resolve)
+ - `root` the root for the project, paths will be set relative to here (default: `pwd`)
+ - `sourceMaps` specify `true` to enable source-maps (default: `false`)
+ - `sourceRoot` specifies the path used as the source map root (default: `"mako://"`)
 
 ## Dependencies
 
@@ -60,3 +61,9 @@ resolving them via [resolve](https://www.npmjs.com/package/resolve).
 During **assemble**, each _entry_ JS file will have all of it's dependencies bundled into a single
 file. Along the way, those dependencies will be _removed_ from the tree, leaving only the output
 files behind.
+
+## About Source Maps
+
+By enabling source-maps with `sourceMaps: true`, this simply generates `file.sourcemap` which is a plain
+object with the source-map metadata. Use another plugin such as [mako-sourcemaps](https://github.com/makojs/sourcemaps)
+to take this object and write it to an external file or as an inline comment.
