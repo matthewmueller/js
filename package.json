@@ -73,7 +73,7 @@
     "uid": "0.0.2"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "pretest": "npm run lint",
     "test": "istanbul cover _mocha",
     "coveralls": "istanbul-coveralls",
