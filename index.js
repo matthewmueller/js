@@ -149,15 +149,27 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function group(file, tree, build) {
-    let timer = build.time('js:bundle');
+    if (file.bundle) return; // short-circuit: already determined to be shared
+
+    let timer = build.time('js:group');
 
     if (tree.graph.outDegree(file.path) > 1) {
+      debug('adding %s to shared bundle', relative(file.path));
       file.bundle = true;
-
-      file.dependencies({ recursive: true }).forEach(file => {
-        file.bundle = true;
-      });
     }
+
+    file.dependants({ recursive: true, objects: true }).forEach(function (file) {
+      if (tree.graph.outDegree(file.path) > 1) {
+        debug('adding %s to shared bundle (up)', relative(file.path));
+        file.bundle = true;
+
+        file.dependencies({ recursive: true, objects: true }).forEach(function (file) {
+          if (file.bundle) return;
+          debug('adding %s to shared bundle (down)', relative(file.path));
+          file.bundle = true;
+        });
+      }
+    });
 
     timer();
   }
@@ -208,16 +220,19 @@ module.exports = function (options) {
    * @param {Tree} tree    The current build tree.
    * @param {Build} build  The current build.
    */
-  function* bundle(file, tree) {
+  function* bundle(file, tree, build) {
     let bundlePath = path.resolve(config.root, config.bundle);
     if (tree.hasFile(bundlePath)) return;
 
+    let timer = build.time('js:bundle');
     let bundle = tree.addFile(bundlePath);
     let mapping = sort(values(getBundle(tree)));
     let results = yield doPack(mapping, config);
 
     bundle.contents = results.code;
     bundle.sourcemap = results.map;
+
+    timer();
   }
 
   /**

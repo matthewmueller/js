@@ -144,6 +144,28 @@ describe('js plugin', function () {
       });
   });
 
+  it('should work for non-JS entry files', function () {
+    let entry = fixture('non-js-entry/glob.txt');
+    let dep = fixture('non-js-entry/index.js');
+    let runner = mako().use(plugins());
+
+    runner.use(text('txt')).dependencies('txt', function (file) {
+      file.addDependency(dep);
+    });
+
+    return runner.build(entry).then(function (build) {
+      let file = build.tree.getFile(dep);
+      assert.strictEqual(exec(file), 42);
+    });
+  });
+
+  it('should propagate resolve errors', function () {
+    let entry = fixture('resolve-error/index.js');
+    let runner = mako().use(plugins());
+
+    return assert.isRejected(runner.build(entry));
+  });
+
   context('multiple entries', function () {
     it('should not smush multiple entries together', function () {
       let entries = [
@@ -320,6 +342,26 @@ describe('js plugin', function () {
             exec(shared, ctx);
             assert.strictEqual(exec(a, ctx), 4);
             assert.strictEqual(exec(b, ctx), 5);
+          });
+      });
+
+      it('should correctly handle deep bundles', function () {
+        let entries = [
+          fixture('bundle-deep/a.js'),
+          fixture('bundle-deep/b.js')
+        ];
+
+        return mako()
+          .use(plugins({ bundle: fixture('bundle-deep/shared.js') }))
+          .build(entries)
+          .then(function (build) {
+            let shared = build.tree.getFile(fixture('bundle-deep/shared.js'));
+            let a = build.tree.getFile(fixture('bundle-deep/a.js'));
+            let b = build.tree.getFile(fixture('bundle-deep/b.js'));
+            let ctx = vm.createContext();
+            exec(shared, ctx);
+            assert.strictEqual(exec(a, ctx), 8);
+            assert.strictEqual(exec(b, ctx), 9);
           });
       });
     });
