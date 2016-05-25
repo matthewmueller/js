@@ -49,12 +49,7 @@ module.exports = function (options) {
     mako.predependencies([ 'js', 'json' ], id);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
-
-    if (config.bundle) {
-      mako.postdependencies([ 'js', 'json' ], group);
-      mako.prewrite('js', bundle);
-    }
-
+    if (config.bundle) mako.postanalyze(bundle);
     mako.postdependencies([ 'js', 'json' ], pack);
   };
 
@@ -82,10 +77,9 @@ module.exports = function (options) {
    * file-deps.
    *
    * @param {File} file    The current file being processed.
-   * @param {Tree} tree    The current build tree.
    * @param {Build} build  The current build.
    */
-  function check(file, tree, build) {
+  function check(file, build) {
     let timer = build.time('js:syntax');
     var err = syntax(file.contents, file.path);
     timer();
@@ -97,10 +91,9 @@ module.exports = function (options) {
    * resolving them to absolute paths and adding them as dependencies.
    *
    * @param {File} file    The current file being processed.
-   * @param {Tree} tree    The current build tree.
    * @param {Build} build  The current build.
    */
-  function* npm(file, tree, build) {
+  function* npm(file, build) {
     let timer = build.time('js:resolve');
 
     file.deps = Object.create(null);
@@ -144,32 +137,25 @@ module.exports = function (options) {
    * When a file is determined to be shared, all of it's dependencies will also
    * be included implicitly.
    *
-   * @param {File} file    The current file being processed.
-   * @param {Tree} tree    The current build tree.
    * @param {Build} build  The current build.
    */
-  function group(file, tree, build) {
-    if (file.bundle) return; // short-circuit: already determined to be shared
+  function bundle(build) {
+    let timer = build.time('js:bundle');
+    let tree = build.tree;
 
-    let timer = build.time('js:group');
-
-    if (tree.graph.outDegree(file.path) > 1) {
-      debug('adding %s to shared bundle', relative(file.path));
-      file.bundle = true;
-    }
-
-    file.dependants({ recursive: true, objects: true }).forEach(function (file) {
-      if (tree.graph.outDegree(file.path) > 1) {
-        debug('adding %s to shared bundle (up)', relative(file.path));
-        file.bundle = true;
-
-        file.dependencies({ recursive: true, objects: true }).forEach(function (file) {
-          if (file.bundle) return;
-          debug('adding %s to shared bundle (down)', relative(file.path));
+    tree.getFiles({ objects: true })
+      .filter(file => file.type === 'js' || file.type === 'json')
+      .forEach(file => {
+        if (file.bundle) return; // short-circuit
+        if (tree.graph.outDegree(file.path) > 1) {
+          debug('adding %s to shared bundle', relative(file.path));
           file.bundle = true;
-        });
-      }
-    });
+          file.dependencies({ recursive: true, objects: true }).forEach(file => {
+            debug('adding %s to shared bundle (implicitly)', relative(file.path));
+            file.bundle = true;
+          });
+        }
+      });
 
     timer();
   }
@@ -179,58 +165,39 @@ module.exports = function (options) {
    * removes all dependencies from the build tree)
    *
    * @param {File} file    The current file being processed.
-   * @param {Tree} tree    The current build tree.
    * @param {Build} build  The current build.
    */
-  function* pack(file, tree, build) {
+  function* pack(file, build) {
     let timer = build.time('js:pack');
     let root = isRoot(file);
     let dep = prepare(file);
 
-    let bundle = config.bundle ? getBundle(tree) : null;
+    let bundle = config.bundle ? getBundle(build.tree) : null;
     if (file.bundle) bundle[file.id] = dep;
 
     // remove the dependency links for the direct dependants and merge their
     // mappings as we roll up
     file.dependants({ objects: true }).forEach(function (parent) {
       Object.assign(initMapping(parent, bundle ? null : dep), file.mapping);
-      tree.removeDependency(parent.path, file.path);
+      build.tree.removeDependency(parent.path, file.path);
     });
 
     // only leave the entry files behind
     if (!root) {
-      tree.removeFile(file.path);
+      build.tree.removeFile(file.path);
     } else {
       debug('packing %s', relative(file.path));
       let mapping = sort(values(initMapping(file, dep)));
-      let results = yield doPack(mapping, config);
+      yield doPack(file, mapping, config);
 
-      file.contents = results.code;
-      file.sourcemap = results.map;
+      if (bundle) {
+        let bundlePath = path.resolve(config.root, config.bundle);
+        let file = build.tree.addFile(bundlePath);
+        debug('packing bundle %s', relative(file.path));
+        let mapping = sort(values(bundle));
+        yield doPack(file, mapping, config);
+      }
     }
-
-    timer();
-  }
-
-  /**
-   * Takes the shared bundle (if one was added for this build) and generates
-   * it's content.
-   *
-   * @param {File} file    The current file being processed.
-   * @param {Tree} tree    The current build tree.
-   * @param {Build} build  The current build.
-   */
-  function* bundle(file, tree, build) {
-    let bundlePath = path.resolve(config.root, config.bundle);
-    if (tree.hasFile(bundlePath)) return;
-
-    let timer = build.time('js:bundle');
-    let bundle = tree.addFile(bundlePath);
-    let mapping = sort(values(getBundle(tree)));
-    let results = yield doPack(mapping, config);
-
-    bundle.contents = results.code;
-    bundle.sourcemap = results.map;
 
     timer();
   }
@@ -333,21 +300,17 @@ function isRoot(file) {
  * Perform the actual pack, which converts the mapping into an object with
  * the output code and map.
  *
+ * @param {File} file      The file to send the packed results to.
  * @param {Array} mapping  The code mapping. (see module-deps)
  * @param {Object} config  The plugin configuration.
- * @return {Object}
  */
-function* doPack(mapping, config) {
+function* doPack(file, mapping, config) {
   let bpack = config.bundle ? { hasExports: true } : null;
   let code = yield runBrowserPack(mapping, config.root, bpack);
   let map = convert.fromSource(code);
-
   if (map) map.setProperty('sourceRoot', config.sourceRoot);
-
-  return {
-    code: convert.removeComments(code),
-    map: config.sourceMaps ? map.toObject() : null
-  };
+  file.contents = convert.removeComments(code);
+  file.sourcemap = config.sourceMaps ? map.toObject() : null;
 }
 
 /**
