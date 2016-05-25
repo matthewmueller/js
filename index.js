@@ -192,10 +192,12 @@ module.exports = function (options) {
 
       if (bundle) {
         let bundlePath = path.resolve(config.root, config.bundle);
-        let file = build.tree.addFile(bundlePath);
-        debug('packing bundle %s', relative(file.path));
-        let mapping = sort(values(bundle));
-        yield doPack(file, mapping, config);
+        if (!build.tree.hasFile(bundlePath)) {
+          let file = build.tree.addFile(bundlePath);
+          debug('packing bundle %s', relative(file.path));
+          let mapping = sort(values(bundle));
+          yield doPack(file, mapping, config);
+        }
       }
     }
 
