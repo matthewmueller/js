@@ -57,7 +57,7 @@
     "chai": "^3.2.0",
     "chai-as-promised": "^5.1.0",
     "eslint": "^2.1.0",
-    "eslint-plugin-mocha": "^2.0.0",
+    "eslint-plugin-mocha": "^3.0.0",
     "eslint-plugin-require-path-exists": "^1.0.15",
     "istanbul": "^0.4.3",
     "istanbul-coveralls": "^1.0.3",
