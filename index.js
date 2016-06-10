@@ -46,11 +46,10 @@ module.exports = function (options) {
 
   return function (mako) {
     mako.postread('json', json);
-    mako.predependencies([ 'js', 'json' ], id);
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
-    if (config.bundle) mako.postanalyze(bundle);
     mako.postdependencies([ 'js', 'json' ], pack);
+    if (config.bundle) mako.preassemble(shared);
   };
 
   /**
@@ -59,16 +58,11 @@ module.exports = function (options) {
    * @param {File} file  The current file being processed.
    */
   function json(file) {
-    file.contents = 'module.exports = ' + file.contents + ';';
-  }
-
-  /**
-   * Adds an id for each file that's the relative path from the root.
-   *
-   * @param {File} file  The current file being processed.
-   */
-  function id(file) {
-    file.id = path.relative(config.root, file.path);
+    file.contents = Buffer.concat([
+      Buffer.from('module.exports = '),
+      file.contents,
+      Buffer.from(';')
+    ]);
   }
 
   /**
@@ -81,7 +75,7 @@ module.exports = function (options) {
    */
   function check(file, build) {
     let timer = build.time('js:syntax');
-    var err = syntax(file.contents, file.path);
+    var err = syntax(file.contents.toString(), file.path);
     timer();
     if (err) throw err;
   }
@@ -102,7 +96,7 @@ module.exports = function (options) {
     file.contents = yield postprocess(file, config.root);
 
     // traverse dependencies
-    yield Promise.all(deps(file.contents, 'js').map(function (dep) {
+    yield Promise.all(deps(file.contents.toString(), 'js').map(function (dep) {
       return new Promise(function (accept, reject) {
         let options = extend(config.resolveOptions, {
           filename: file.path,
@@ -110,15 +104,15 @@ module.exports = function (options) {
           modules: builtins
         });
 
-        let parent = relative(file.path);
-        debug('resolving %s from %s', dep, parent);
+        debug('resolving %s from %s', dep, file.relative);
         resolve(dep, options, function (err, res, pkg) {
           if (err) return reject(err);
-          let child = relative(res);
-          debug('resolved %s -> %s from %s', dep, child, parent);
+          debug('resolved %s -> %s from %s', dep, relative(res), file.relative);
           file.pkg = pkg;
-          file.deps[dep] = path.relative(config.root, res);
-          file.addDependency(res);
+          let depFile = build.tree.findFile(res);
+          if (!depFile) depFile = build.tree.addFile({ base: file.base, path: res });
+          file.deps[dep] = depFile.id;
+          file.addDependency(depFile);
           accept();
         });
       });
@@ -139,23 +133,24 @@ module.exports = function (options) {
    *
    * @param {Build} build  The current build.
    */
-  function bundle(build) {
+  function shared(build) {
     let timer = build.time('js:bundle');
     let tree = build.tree;
 
-    tree.getFiles({ objects: true })
-      .filter(file => file.type === 'js' || file.type === 'json')
-      .forEach(file => {
-        if (file.bundle) return; // short-circuit
-        if (tree.graph.outDegree(file.path) > 1) {
-          debug('adding %s to shared bundle', relative(file.path));
+    let files = tree.getFiles()
+      .filter(file => file.type === 'js' || file.type === 'json');
+
+    files.forEach(file => {
+      if (file.bundle) return; // short-circuit
+      if (tree.graph.outDegree(file.id) > 1) {
+        debug('marking %s as shared', file.relative);
+        file.bundle = true;
+        file.dependencies({ recursive: true }).forEach(file => {
+          debug('marking %s as shared (implicitly)', file.relative);
           file.bundle = true;
-          file.dependencies({ recursive: true, objects: true }).forEach(file => {
-            debug('adding %s to shared bundle (implicitly)', relative(file.path));
-            file.bundle = true;
-          });
-        }
-      });
+        });
+      }
+    });
 
     timer();
   }
@@ -168,6 +163,7 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function* pack(file, build) {
+    debug('pack %s', file.relative);
     let timer = build.time('js:pack');
     let root = isRoot(file);
     let dep = prepare(file);
@@ -177,22 +173,22 @@ module.exports = function (options) {
 
     // remove the dependency links for the direct dependants and merge their
     // mappings as we roll up
-    file.dependants({ objects: true }).forEach(function (parent) {
+    file.dependants().forEach(function (parent) {
       Object.assign(initMapping(parent, bundle ? null : dep), file.mapping);
-      build.tree.removeDependency(parent.path, file.path);
+      build.tree.removeDependency(parent, file);
     });
 
     // only leave the entry files behind
     if (!root) {
-      build.tree.removeFile(file.path);
+      build.tree.removeFile(file);
     } else {
-      debug('packing %s', relative(file.path));
+      debug('packing %s', file.relative);
       let mapping = sort(values(initMapping(file, dep)));
       yield doPack(file, mapping, config);
 
       if (bundle) {
         let bundlePath = path.resolve(config.root, config.bundle);
-        if (!build.tree.hasFile(bundlePath)) {
+        if (!build.tree.findFile(bundlePath)) {
           let file = build.tree.addFile(bundlePath);
           debug('packing bundle %s', relative(file.path));
           let mapping = sort(values(bundle));
@@ -215,7 +211,7 @@ module.exports = function (options) {
     return {
       id: file.id,
       deps: file.deps || {},
-      source: file.contents,
+      source: file.contents.toString(),
       sourceFile: config.sourceMaps ? file.id : null,
       entry: isRoot(file)
     };
@@ -274,7 +270,7 @@ function postprocess(file, root) {
       .on('error', reject)
       .pipe(insertGlobals(file.path, { basedir: root }))
       .on('error', reject)
-      .pipe(concat({ encoding: 'string' }, resolve));
+      .pipe(concat(resolve));
   });
 }
 
@@ -286,12 +282,8 @@ function postprocess(file, root) {
  * @return {Boolean}
  */
 function isRoot(file) {
-  // short-circuit, an entry file is automatically considered a root
-  if (file.entry) return true;
-
-  // if there are no dependants, this is assumed to be a root (this could
-  // possibly be inferred from file.entry)
-  let dependants = file.dependants({ objects: true });
+  // if there are no dependants, this is assumed to be a root
+  let dependants = file.dependants();
   if (dependants.length === 0) return true;
 
   // if any of the dependants are not js, (ie: html) this is a root.
@@ -309,9 +301,9 @@ function isRoot(file) {
 function* doPack(file, mapping, config) {
   let bpack = config.bundle ? { hasExports: true } : null;
   let code = yield runBrowserPack(mapping, config.root, bpack);
-  let map = convert.fromSource(code);
+  let map = convert.fromSource(code.toString());
   if (map) map.setProperty('sourceRoot', config.sourceRoot);
-  file.contents = convert.removeComments(code);
+  file.contents = Buffer.from(convert.removeComments(code.toString()));
   file.sourcemap = config.sourceMaps ? map.toObject() : null;
 }
 
@@ -328,7 +320,7 @@ function runBrowserPack(mapping, root, options) {
     streamify(mapping)
       .pipe(bpack(Object.assign({ basedir: root, raw: true }, options)))
       .on('error', reject)
-      .pipe(concat({ encoding: 'string' }, resolve));
+      .pipe(concat(resolve));
   });
 }
 
@@ -340,9 +332,6 @@ function runBrowserPack(mapping, root, options) {
  * @return {Object}
  */
 function getBundle(tree) {
-  if (!bundles.has(tree)) {
-    bundles.set(tree, Object.create(null));
-  }
-
+  if (!bundles.has(tree)) bundles.set(tree, Object.create(null));
   return bundles.get(tree);
 }

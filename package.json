@@ -48,7 +48,7 @@
     "vm-browserify": "0.0.4"
   },
   "peerDependencies": {
-    "mako": "^0.10.0"
+    "mako": "^0.11.1"
   },
   "devDependencies": {
     "@dominicbarnes/eslint-config": "^1.0.0",
@@ -61,14 +61,14 @@
     "eslint-plugin-require-path-exists": "^1.0.15",
     "istanbul": "^0.4.3",
     "istanbul-coveralls": "^1.0.3",
-    "mako": "^0.10.0",
-    "mako-copy": "^0.10.0",
-    "mako-output": "^0.9.0",
+    "mako": "^0.11.1",
+    "mako-copy": "^0.11.0",
+    "mako-output": "^0.10.0",
     "mako-serve": "^0.10.0",
     "mako-sourcemaps": "^0.2.0",
-    "mako-stat": "^0.9.0",
-    "mako-text": "^0.9.0",
-    "mako-write": "^0.8.0",
+    "mako-stat": "^0.10.0",
+    "mako-buffer": "^0.10.0",
+    "mako-write": "^0.9.0",
     "mocha": "^2.3.0",
     "uid": "0.0.2"
   },
