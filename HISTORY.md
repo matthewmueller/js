@@ -1,4 +1,10 @@
 
+0.19.1 / 2016-06-12
+===================
+
+  * sourceFile should be human-friendly (not uuid)
+  * node 4 compat
+
 0.19.0 / 2016-06-12
 ===================
 
