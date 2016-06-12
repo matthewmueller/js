@@ -212,7 +212,7 @@ module.exports = function (options) {
       id: file.id,
       deps: file.deps || {},
       source: file.contents.toString(),
-      sourceFile: config.sourceMaps ? file.id : null,
+      sourceFile: config.sourceMaps ? file.relative : null,
       entry: isRoot(file)
     };
   }
