@@ -304,7 +304,7 @@ function* doPack(file, mapping, config) {
   let map = convert.fromSource(code.toString());
   if (map) map.setProperty('sourceRoot', config.sourceRoot);
   file.contents = Buffer.from(convert.removeComments(code.toString()));
-  file.sourcemap = config.sourceMaps ? map.toObject() : null;
+  file.sourceMap = config.sourceMaps ? map.toObject() : null;
 }
 
 /**
