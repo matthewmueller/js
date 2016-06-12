@@ -1,4 +1,11 @@
 
+0.19.0 / 2016-06-12
+===================
+
+  * renaming file.sourcemap to file.sourceMap (fixes #26)
+  * update punycode
+  * update mako core and internals
+
 0.18.1 / 2016-05-25
 ===================
 
