@@ -59,9 +59,9 @@ module.exports = function (options) {
    */
   function json(file) {
     file.contents = Buffer.concat([
-      Buffer.from('module.exports = '),
+      new Buffer('module.exports = '),
       file.contents,
-      Buffer.from(';')
+      new Buffer(';')
     ]);
   }
 
@@ -303,7 +303,7 @@ function* doPack(file, mapping, config) {
   let code = yield runBrowserPack(mapping, config.root, bpack);
   let map = convert.fromSource(code.toString());
   if (map) map.setProperty('sourceRoot', config.sourceRoot);
-  file.contents = Buffer.from(convert.removeComments(code.toString()));
+  file.contents = new Buffer(convert.removeComments(code.toString()));
   file.sourceMap = config.sourceMaps ? map.toObject() : null;
 }
 
