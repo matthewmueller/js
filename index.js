@@ -52,7 +52,7 @@ module.exports = function (options) {
     mako.predependencies('js', check);
     mako.dependencies('js', npm);
     mako.postdependencies([ 'js', 'json' ], pack);
-    if (config.bundle) mako.preassemble(shared);
+    if (config.bundle) mako.precompile(shared);
   };
 
   /**
@@ -187,15 +187,15 @@ module.exports = function (options) {
     } else {
       debug('packing %s', relative(file.path));
       let mapping = sort(values(initMapping(file, dep)));
-      yield doPack(file, mapping, build.tree.root, config);
+      yield doPack(file, mapping, file.base, config);
 
       if (bundle) {
-        let bundlePath = path.resolve(build.tree.root, config.bundle);
+        let bundlePath = path.resolve(file.base, config.bundle);
         if (!build.tree.findFile(bundlePath)) {
           let file = build.tree.addFile(bundlePath);
           debug('packing bundle %s', relative(file.path));
           let mapping = sort(values(bundle));
-          yield doPack(file, mapping, build.tree.root, config);
+          yield doPack(file, mapping, file.base, config);
         }
       }
     }
