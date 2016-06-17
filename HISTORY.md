@@ -1,4 +1,11 @@
 
+0.20.0 / 2016-06-17
+===================
+
+  * update mako core
+  * clean up readme
+  * clean up travis config, prune before update
+
 0.19.1 / 2016-06-12
 ===================
 
