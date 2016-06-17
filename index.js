@@ -26,7 +26,6 @@ const defaults = {
   bundle: false,
   extensions: [],
   resolveOptions: null,
-  root: pwd,
   sourceMaps: false,
   sourceRoot: 'file://mako'
 };
@@ -35,7 +34,11 @@ const defaults = {
  * Initialize the mako js plugin.
  *
  * Available options:
- *  - root {String}  The root directory (default: pwd)
+ *  - bundle {String}          a path to a shared bundle file.
+ *  - extensions {Array}       additional extensions to process.
+ *  - resolveOptions {Object}  options for the resolve module.
+ *  - sourceMaps {Boolean}     enable source maps.
+ *  - sourceRoot {String}      source map root.
  *
  * @param {Object} options  Configuration.
  * @return {Function}
@@ -93,7 +96,7 @@ module.exports = function (options) {
     file.deps = Object.create(null);
 
     // include node globals and environment variables
-    file.contents = yield postprocess(file, config.root);
+    file.contents = yield postprocess(file, build.tree.root);
 
     // traverse dependencies
     yield Promise.all(deps(file.contents.toString(), 'js').map(function (dep) {
@@ -104,13 +107,13 @@ module.exports = function (options) {
           modules: builtins
         });
 
-        debug('resolving %s from %s', dep, file.relative);
+        debug('resolving %s from %s', dep, relative(file.path));
         resolve(dep, options, function (err, res, pkg) {
           if (err) return reject(err);
-          debug('resolved %s -> %s from %s', dep, relative(res), file.relative);
+          debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path));
           file.pkg = pkg;
           let depFile = build.tree.findFile(res);
-          if (!depFile) depFile = build.tree.addFile({ base: file.base, path: res });
+          if (!depFile) depFile = build.tree.addFile(res);
           file.deps[dep] = depFile.id;
           file.addDependency(depFile);
           accept();
@@ -143,10 +146,10 @@ module.exports = function (options) {
     files.forEach(file => {
       if (file.bundle) return; // short-circuit
       if (tree.graph.outDegree(file.id) > 1) {
-        debug('marking %s as shared', file.relative);
+        debug('marking %s as shared', relative(file.path));
         file.bundle = true;
         file.dependencies({ recursive: true }).forEach(file => {
-          debug('marking %s as shared (implicitly)', file.relative);
+          debug('marking %s as shared (implicitly)', relative(file.path));
           file.bundle = true;
         });
       }
@@ -163,7 +166,7 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function* pack(file, build) {
-    debug('pack %s', file.relative);
+    debug('pack %s', relative(file.path));
     let timer = build.time('js:pack');
     let root = isRoot(file);
     let dep = prepare(file);
@@ -182,17 +185,17 @@ module.exports = function (options) {
     if (!root) {
       build.tree.removeFile(file);
     } else {
-      debug('packing %s', file.relative);
+      debug('packing %s', relative(file.path));
       let mapping = sort(values(initMapping(file, dep)));
-      yield doPack(file, mapping, config);
+      yield doPack(file, mapping, build.tree.root, config);
 
       if (bundle) {
-        let bundlePath = path.resolve(config.root, config.bundle);
+        let bundlePath = path.resolve(build.tree.root, config.bundle);
         if (!build.tree.findFile(bundlePath)) {
           let file = build.tree.addFile(bundlePath);
           debug('packing bundle %s', relative(file.path));
           let mapping = sort(values(bundle));
-          yield doPack(file, mapping, config);
+          yield doPack(file, mapping, build.tree.root, config);
         }
       }
     }
@@ -296,11 +299,12 @@ function isRoot(file) {
  *
  * @param {File} file      The file to send the packed results to.
  * @param {Array} mapping  The code mapping. (see module-deps)
+ * @param {String} root    The build root
  * @param {Object} config  The plugin configuration.
  */
-function* doPack(file, mapping, config) {
+function* doPack(file, mapping, root, config) {
   let bpack = config.bundle ? { hasExports: true } : null;
-  let code = yield runBrowserPack(mapping, config.root, bpack);
+  let code = yield runBrowserPack(mapping, root, bpack);
   let map = convert.fromSource(code.toString());
   if (map) map.setProperty('sourceRoot', config.sourceRoot);
   file.contents = new Buffer(convert.removeComments(code.toString()));
