@@ -1,10 +1,13 @@
 sudo: false
 language: node_js
 node_js:
+  - stable
   - 4
-  - 6
-install: npm update
-after_success: npm run coveralls
+install:
+  - npm prune
+  - npm update
+after_success:
+  - npm run coveralls
 cache:
   directories:
     - node_modules
@@ -16,4 +19,4 @@ deploy:
   on:
     tags: true
     repo: makojs/js
-    node: 6
+    node: stable
