@@ -6,7 +6,7 @@ let builtins = require('./lib/builtins');
 let concat = require('concat-stream');
 let convert = require('convert-source-map');
 let debug = require('debug')('mako-js');
-let deps = require('file-deps');
+let detective = require('detective');
 let envify = require('envify');
 let flatten = require('array-flatten');
 let insertGlobals = require('insert-module-globals');
@@ -24,6 +24,7 @@ const bundles = new WeakMap();
 // default plugin configuration
 const defaults = {
   bundle: false,
+  detectiveOptions: null,
   extensions: [],
   resolveOptions: null,
   sourceMaps: false,
@@ -93,13 +94,16 @@ module.exports = function (options) {
   function* npm(file, build) {
     let timer = build.time('js:resolve');
 
-    file.deps = Object.create(null);
-
     // include node globals and environment variables
     file.contents = yield postprocess(file, build.tree.root);
 
+    file.deps = Object.create(null);
+    let deps = detective(file.contents, config.detectiveOptions);
+    debug('%d dependencies found for %s:', deps.length, relative(file.path));
+    deps.forEach(dep => debug('> %s', dep));
+
     // traverse dependencies
-    yield Promise.all(deps(file.contents.toString(), 'js').map(function (dep) {
+    yield Promise.all(deps.map(function (dep) {
       return new Promise(function (accept, reject) {
         let options = extend(config.resolveOptions, {
           filename: file.path,

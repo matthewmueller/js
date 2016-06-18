@@ -23,6 +23,7 @@
 Create a new plugin instance, with the following `options` available:
 
  - `bundle` if set, should be a pathname (relative to `root`) that specifies an extra file to put shared dependencies in
+ - `detectiveOptions` additional options to be passed to [detective](https://www.npmjs.com/package/detective)
  - `extensions` additional extensions to resolve with **in addition to** `.js` and `.json` (eg: `.coffee`)
  - `resolveOptions` additional options to be passed to [resolve](https://www.npmjs.com/package/resolve)
  - `sourceMaps` specify `true` to enable source-maps (default: `false`)
