@@ -1,4 +1,10 @@
 
+0.20.2 / 2016-06-17
+===================
+
+  * switching to detective for parsing (fixes #36)
+  * update remaining dev deps
+
 0.20.1 / 2016-06-17
 ===================
 
