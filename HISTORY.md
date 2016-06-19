@@ -1,4 +1,13 @@
 
+0.20.4 / 2016-06-19
+===================
+
+  * formatting existing code with standard
+  * switch to standard for linting
+  * fixing file.sourcemap in 1 test
+  * adding more tests for the cycle problem to prevent regression (fixes #64)
+  * chore(package): update mako-buffer to version 0.11.1
+
 0.20.3 / 2016-06-18
 ===================
 
