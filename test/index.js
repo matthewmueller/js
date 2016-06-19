@@ -200,10 +200,18 @@ describe('js plugin', function () {
     });
 
     it('should work with the more common example', function () {
-      // FIXME: figure out why these circular tests fail half the time
-      this.retries(2); // eslint-disable-line
-
       let entry = fixture('circular-deps-2/index.js');
+      return mako()
+        .use(plugins())
+        .build(entry)
+        .then(function (build) {
+          let file = build.tree.findFile(entry);
+          assert.strictEqual(exec(file)(file.id), 'a');
+        });
+    });
+
+    it('should work with the large cycle example', function () {
+      let entry = fixture('circular-deps-3/index.js');
       return mako()
         .use(plugins())
         .build(entry)
