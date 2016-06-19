@@ -11,6 +11,7 @@ let envify = require('envify');
 let flatten = require('array-flatten');
 let insertGlobals = require('insert-module-globals');
 let path = require('path');
+let Promise = require('bluebird');
 let pump = require('pump');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
@@ -104,8 +105,8 @@ module.exports = function (options) {
     deps.forEach(dep => debug('> %s', dep));
 
     // traverse dependencies
-    yield Promise.all(deps.map(function (dep) {
-      return new Promise(function (accept, reject) {
+    yield Promise.map(deps, function (dep) {
+      return Promise.fromCallback(function (done) {
         let options = extend(config.resolveOptions, {
           filename: file.path,
           extensions: flatten([ '.js', '.json', config.extensions ]),
@@ -114,17 +115,17 @@ module.exports = function (options) {
 
         debug('resolving %s from %s', dep, relative(file.path));
         resolve(dep, options, function (err, res, pkg) {
-          if (err) return reject(err);
+          if (err) return done(err);
           debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path));
           file.pkg = pkg;
           let depFile = build.tree.findFile(res);
           if (!depFile) depFile = build.tree.addFile(res);
           file.deps[dep] = depFile.id;
           file.addDependency(depFile);
-          accept();
+          done();
         });
       });
-    }));
+    });
 
     timer();
   }
