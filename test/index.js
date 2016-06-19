@@ -277,14 +277,14 @@ describe('js plugin', function () {
           });
       });
 
-      it('should generate file.sourcemap', function () {
+      it('should generate file.sourceMap', function () {
         let entry = fixture('source-maps/index.js');
         return mako()
           .use(plugins({ sourceMaps: true }))
           .build(entry)
           .then(function (build) {
             let code = build.tree.findFile(entry);
-            assert(convert.fromObject(code.sourcemap), 'should have a source-map object');
+            assert(convert.fromObject(code.sourceMap), 'should have a source-map object');
           });
       });
     });
