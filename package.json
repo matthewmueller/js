@@ -53,14 +53,8 @@
     "vm-browserify": "0.0.4"
   },
   "devDependencies": {
-    "@dominicbarnes/eslint-config": "^1.0.0",
-    "@dominicbarnes/eslint-config-node": "^1.0.1",
-    "@dominicbarnes/eslint-config-test": "^1.0.0",
     "chai": "^3.2.0",
     "chai-as-promised": "^5.1.0",
-    "eslint": "^2.1.0",
-    "eslint-plugin-mocha": "^3.0.0",
-    "eslint-plugin-require-path-exists": "^1.0.15",
     "istanbul": "^0.4.3",
     "istanbul-coveralls": "^1.0.3",
     "mako": "^0.12.0",
@@ -72,10 +66,11 @@
     "mako-stat": "^0.11.0",
     "mako-write": "^0.10.0",
     "mocha": "^2.3.0",
+    "standard": "^7.1.2",
     "uid": "0.0.2"
   },
   "scripts": {
-    "lint": "eslint --cache .",
+    "lint": "standard",
     "pretest": "npm run lint",
     "test": "istanbul cover _mocha",
     "coveralls": "istanbul-coveralls",

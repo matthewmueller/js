@@ -1,9 +1,0 @@
-{
-  "extends": [
-    "@dominicbarnes",
-    "@dominicbarnes/node"
-  ],
-  "rules": {
-    "camelcase": 0
-  }
-}

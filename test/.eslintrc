@@ -1,6 +1,0 @@
-{
-  "extends": "@dominicbarnes/test",
-  "rules": {
-    "no-return-assign": 0
-  }
-}
