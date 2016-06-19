@@ -75,5 +75,11 @@
     "test": "istanbul cover _mocha",
     "coveralls": "istanbul-coveralls",
     "start": "cd example && mako-serve"
+  },
+  "standard": {
+    "ignore": [
+      "test/fixtures/**",
+      "example/**"
+    ]
   }
 }

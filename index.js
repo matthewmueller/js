@@ -1,27 +1,26 @@
+'use strict'
 
-'use strict';
+let bpack = require('browser-pack')
+let builtins = require('./lib/builtins')
+let concat = require('concat-stream')
+let convert = require('convert-source-map')
+let debug = require('debug')('mako-js')
+let detective = require('detective')
+let envify = require('envify')
+let flatten = require('array-flatten')
+let insertGlobals = require('insert-module-globals')
+let path = require('path')
+let Promise = require('bluebird')
+let pump = require('pump')
+let readable = require('string-to-stream')
+let resolve = require('browser-resolve')
+let streamify = require('stream-array')
+let syntax = require('syntax-error')
+let values = require('object-values')
 
-let bpack = require('browser-pack');
-let builtins = require('./lib/builtins');
-let concat = require('concat-stream');
-let convert = require('convert-source-map');
-let debug = require('debug')('mako-js');
-let detective = require('detective');
-let envify = require('envify');
-let flatten = require('array-flatten');
-let insertGlobals = require('insert-module-globals');
-let path = require('path');
-let Promise = require('bluebird');
-let pump = require('pump');
-let readable = require('string-to-stream');
-let resolve = require('browser-resolve');
-let streamify = require('stream-array');
-let syntax = require('syntax-error');
-let values = require('object-values');
-
-const pwd = process.cwd();
-const relative = abs => path.relative(pwd, abs);
-const bundles = new WeakMap();
+const pwd = process.cwd()
+const relative = abs => path.relative(pwd, abs)
+const bundles = new WeakMap()
 
 // default plugin configuration
 const defaults = {
@@ -31,7 +30,7 @@ const defaults = {
   resolveOptions: null,
   sourceMaps: false,
   sourceRoot: 'file://mako'
-};
+}
 
 /**
  * Initialize the mako js plugin.
@@ -47,28 +46,28 @@ const defaults = {
  * @return {Function}
  */
 module.exports = function (options) {
-  debug('initialize %j', options);
-  let config = extend(defaults, options);
+  debug('initialize %j', options)
+  let config = extend(defaults, options)
 
   return function (mako) {
-    mako.postread('json', json);
-    mako.predependencies('js', check);
-    mako.dependencies('js', npm);
-    mako.postdependencies([ 'js', 'json' ], pack);
-    if (config.bundle) mako.precompile(shared);
-  };
+    mako.postread('json', json)
+    mako.predependencies('js', check)
+    mako.dependencies('js', npm)
+    mako.postdependencies([ 'js', 'json' ], pack)
+    if (config.bundle) mako.precompile(shared)
+  }
 
   /**
    * Convert a JSON file into a valid JS function that can be inlined.
    *
    * @param {File} file  The current file being processed.
    */
-  function json(file) {
+  function json (file) {
     file.contents = Buffer.concat([
       new Buffer('module.exports = '),
       file.contents,
       new Buffer(';')
-    ]);
+    ])
   }
 
   /**
@@ -79,11 +78,11 @@ module.exports = function (options) {
    * @param {File} file    The current file being processed.
    * @param {Build} build  The current build.
    */
-  function check(file, build) {
-    let timer = build.time('js:syntax');
-    var err = syntax(file.contents.toString(), file.path);
-    timer();
-    if (err) throw err;
+  function check (file, build) {
+    let timer = build.time('js:syntax')
+    var err = syntax(file.contents.toString(), file.path)
+    timer()
+    if (err) throw err
   }
 
   /**
@@ -93,16 +92,16 @@ module.exports = function (options) {
    * @param {File} file    The current file being processed.
    * @param {Build} build  The current build.
    */
-  function* npm(file, build) {
-    let timer = build.time('js:resolve');
+  function * npm (file, build) {
+    let timer = build.time('js:resolve')
 
     // include node globals and environment variables
-    file.contents = yield postprocess(file, build.tree.root);
+    file.contents = yield postprocess(file, build.tree.root)
 
-    file.deps = Object.create(null);
-    let deps = detective(file.contents, config.detectiveOptions);
-    debug('%d dependencies found for %s:', deps.length, relative(file.path));
-    deps.forEach(dep => debug('> %s', dep));
+    file.deps = Object.create(null)
+    let deps = detective(file.contents, config.detectiveOptions)
+    debug('%d dependencies found for %s:', deps.length, relative(file.path))
+    deps.forEach(dep => debug('> %s', dep))
 
     // traverse dependencies
     yield Promise.map(deps, function (dep) {
@@ -111,23 +110,23 @@ module.exports = function (options) {
           filename: file.path,
           extensions: flatten([ '.js', '.json', config.extensions ]),
           modules: builtins
-        });
+        })
 
-        debug('resolving %s from %s', dep, relative(file.path));
+        debug('resolving %s from %s', dep, relative(file.path))
         resolve(dep, options, function (err, res, pkg) {
-          if (err) return done(err);
-          debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path));
-          file.pkg = pkg;
-          let depFile = build.tree.findFile(res);
-          if (!depFile) depFile = build.tree.addFile(res);
-          file.deps[dep] = depFile.id;
-          file.addDependency(depFile);
-          done();
-        });
-      });
-    });
+          if (err) return done(err)
+          debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path))
+          file.pkg = pkg
+          let depFile = build.tree.findFile(res)
+          if (!depFile) depFile = build.tree.addFile(res)
+          file.deps[dep] = depFile.id
+          file.addDependency(depFile)
+          done()
+        })
+      })
+    })
 
-    timer();
+    timer()
   }
 
   /**
@@ -142,26 +141,26 @@ module.exports = function (options) {
    *
    * @param {Build} build  The current build.
    */
-  function shared(build) {
-    let timer = build.time('js:bundle');
-    let tree = build.tree;
+  function shared (build) {
+    let timer = build.time('js:bundle')
+    let tree = build.tree
 
     let files = tree.getFiles()
-      .filter(file => file.type === 'js' || file.type === 'json');
+      .filter(file => file.type === 'js' || file.type === 'json')
 
     files.forEach(file => {
-      if (file.bundle) return; // short-circuit
+      if (file.bundle) return // short-circuit
       if (tree.graph.outDegree(file.id) > 1) {
-        debug('marking %s as shared', relative(file.path));
-        file.bundle = true;
+        debug('marking %s as shared', relative(file.path))
+        file.bundle = true
         file.dependencies({ recursive: true }).forEach(file => {
-          debug('marking %s as shared (implicitly)', relative(file.path));
-          file.bundle = true;
-        });
+          debug('marking %s as shared (implicitly)', relative(file.path))
+          file.bundle = true
+        })
       }
-    });
+    })
 
-    timer();
+    timer()
   }
 
   /**
@@ -171,42 +170,42 @@ module.exports = function (options) {
    * @param {File} file    The current file being processed.
    * @param {Build} build  The current build.
    */
-  function* pack(file, build) {
-    debug('pack %s', relative(file.path));
-    let timer = build.time('js:pack');
-    let root = isRoot(file);
-    let dep = prepare(file);
+  function * pack (file, build) {
+    debug('pack %s', relative(file.path))
+    let timer = build.time('js:pack')
+    let root = isRoot(file)
+    let dep = prepare(file)
 
-    let bundle = config.bundle ? getBundle(build.tree) : null;
-    if (file.bundle) bundle[file.id] = dep;
+    let bundle = config.bundle ? getBundle(build.tree) : null
+    if (file.bundle) bundle[file.id] = dep
 
     // remove the dependency links for the direct dependants and merge their
     // mappings as we roll up
     file.dependants().forEach(function (parent) {
-      Object.assign(initMapping(parent, bundle ? null : dep), file.mapping);
-      build.tree.removeDependency(parent, file);
-    });
+      Object.assign(initMapping(parent, bundle ? null : dep), file.mapping)
+      build.tree.removeDependency(parent, file)
+    })
 
     // only leave the entry files behind
     if (!root) {
-      build.tree.removeFile(file);
+      build.tree.removeFile(file)
     } else {
-      debug('packing %s', relative(file.path));
-      let mapping = sort(values(initMapping(file, dep)));
-      yield doPack(file, mapping, file.base, config);
+      debug('packing %s', relative(file.path))
+      let mapping = sort(values(initMapping(file, dep)))
+      yield doPack(file, mapping, file.base, config)
 
       if (bundle) {
-        let bundlePath = path.resolve(file.base, config.bundle);
+        let bundlePath = path.resolve(file.base, config.bundle)
         if (!build.tree.findFile(bundlePath)) {
-          let file = build.tree.addFile(bundlePath);
-          debug('packing bundle %s', relative(file.path));
-          let mapping = sort(values(bundle));
-          yield doPack(file, mapping, file.base, config);
+          let file = build.tree.addFile(bundlePath)
+          debug('packing bundle %s', relative(file.path))
+          let mapping = sort(values(bundle))
+          yield doPack(file, mapping, file.base, config)
         }
       }
     }
 
-    timer();
+    timer()
   }
 
   /**
@@ -216,14 +215,14 @@ module.exports = function (options) {
    * @param {Boolean} entry  Whether or not this file is the entry.
    * @return {Object}
    */
-  function prepare(file) {
+  function prepare (file) {
     return {
       id: file.id,
       deps: file.deps || {},
       source: file.contents.toString(),
       sourceFile: config.sourceMaps ? file.relative : null,
       entry: isRoot(file)
-    };
+    }
   }
 
   /**
@@ -234,12 +233,12 @@ module.exports = function (options) {
    * @param {Object} dep  The mapping entry to initialize with.
    * @return {Object}     The new/existing mapping.
    */
-  function initMapping(file, dep) {
-    if (!file.mapping) file.mapping = Object.create(null);
-    if (dep) file.mapping[dep.id] = dep;
-    return file.mapping;
+  function initMapping (file, dep) {
+    if (!file.mapping) file.mapping = Object.create(null)
+    if (dep) file.mapping[dep.id] = dep
+    return file.mapping
   }
-};
+}
 
 /**
  * Helper for generating objects. The returned value is always a fresh object
@@ -247,10 +246,10 @@ module.exports = function (options) {
  *
  * @return {Object}
  */
-function extend() {
-  var sources = [].slice.call(arguments);
-  var args = [ Object.create(null) ].concat(sources);
-  return Object.assign.apply(null, args);
+function extend () {
+  var sources = [].slice.call(arguments)
+  var args = [ Object.create(null) ].concat(sources)
+  return Object.assign.apply(null, args)
 }
 
 /**
@@ -259,10 +258,10 @@ function extend() {
  * @param {Array} deps  The deps to sort. (with id props)
  * @return {Array}
  */
-function sort(deps) {
+function sort (deps) {
   return deps.sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+    return a.id < b.id ? -1 : 1
+  })
 }
 
 /**
@@ -272,7 +271,7 @@ function sort(deps) {
  * @param {String} root  The root directory.
  * @return {Promise}
  */
-function postprocess(file, root) {
+function postprocess (file, root) {
   return new Promise(function (resolve, reject) {
     pump(
       readable(file.contents),
@@ -280,8 +279,8 @@ function postprocess(file, root) {
       insertGlobals(file.path, { basedir: root }),
       concat(resolve),
       reject
-    );
-  });
+    )
+  })
 }
 
 /**
@@ -291,13 +290,13 @@ function postprocess(file, root) {
  * @param {File} file  The file to examine.
  * @return {Boolean}
  */
-function isRoot(file) {
+function isRoot (file) {
   // if there are no dependants, this is assumed to be a root
-  let dependants = file.dependants();
-  if (dependants.length === 0) return true;
+  let dependants = file.dependants()
+  if (dependants.length === 0) return true
 
   // if any of the dependants are not js, (ie: html) this is a root.
-  return dependants.some(file => file.type !== 'js');
+  return dependants.some(file => file.type !== 'js')
 }
 
 /**
@@ -309,13 +308,13 @@ function isRoot(file) {
  * @param {String} root    The build root
  * @param {Object} config  The plugin configuration.
  */
-function* doPack(file, mapping, root, config) {
-  let bpack = config.bundle ? { hasExports: true } : null;
-  let code = yield runBrowserPack(mapping, root, bpack);
-  let map = convert.fromSource(code.toString());
-  if (map) map.setProperty('sourceRoot', config.sourceRoot);
-  file.contents = new Buffer(convert.removeComments(code.toString()));
-  file.sourceMap = config.sourceMaps ? map.toObject() : null;
+function * doPack (file, mapping, root, config) {
+  let bpack = config.bundle ? { hasExports: true } : null
+  let code = yield runBrowserPack(mapping, root, bpack)
+  let map = convert.fromSource(code.toString())
+  if (map) map.setProperty('sourceRoot', config.sourceRoot)
+  file.contents = new Buffer(convert.removeComments(code.toString()))
+  file.sourceMap = config.sourceMaps ? map.toObject() : null
 }
 
 /**
@@ -326,15 +325,15 @@ function* doPack(file, mapping, root, config) {
  * @param {Object} [options]  Additional options to pass to browser-pack
  * @return {Promise}
  */
-function runBrowserPack(mapping, root, options) {
+function runBrowserPack (mapping, root, options) {
   return new Promise(function (resolve, reject) {
     pump(
       streamify(mapping),
       bpack(Object.assign({ basedir: root, raw: true }, options)),
       concat(resolve),
       reject
-    );
-  });
+    )
+  })
 }
 
 /**
@@ -344,7 +343,7 @@ function runBrowserPack(mapping, root, options) {
  * @param {Tree} tree  The build tree to use as the key.
  * @return {Object}
  */
-function getBundle(tree) {
-  if (!bundles.has(tree)) bundles.set(tree, Object.create(null));
-  return bundles.get(tree);
+function getBundle (tree) {
+  if (!bundles.has(tree)) bundles.set(tree, Object.create(null))
+  return bundles.get(tree)
 }
