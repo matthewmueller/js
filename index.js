@@ -11,6 +11,7 @@ let envify = require('envify');
 let flatten = require('array-flatten');
 let insertGlobals = require('insert-module-globals');
 let path = require('path');
+let pump = require('pump');
 let readable = require('string-to-stream');
 let resolve = require('browser-resolve');
 let streamify = require('stream-array');
@@ -272,12 +273,13 @@ function sort(deps) {
  */
 function postprocess(file, root) {
   return new Promise(function (resolve, reject) {
-    readable(file.contents)
-      .pipe(envify(file.path))
-      .on('error', reject)
-      .pipe(insertGlobals(file.path, { basedir: root }))
-      .on('error', reject)
-      .pipe(concat(resolve));
+    pump(
+      readable(file.contents),
+      envify(file.path),
+      insertGlobals(file.path, { basedir: root }),
+      concat(resolve),
+      reject
+    );
   });
 }
 
@@ -325,10 +327,12 @@ function* doPack(file, mapping, root, config) {
  */
 function runBrowserPack(mapping, root, options) {
   return new Promise(function (resolve, reject) {
-    streamify(mapping)
-      .pipe(bpack(Object.assign({ basedir: root, raw: true }, options)))
-      .on('error', reject)
-      .pipe(concat(resolve));
+    pump(
+      streamify(mapping),
+      bpack(Object.assign({ basedir: root, raw: true }, options)),
+      concat(resolve),
+      reject
+    );
   });
 }
 
