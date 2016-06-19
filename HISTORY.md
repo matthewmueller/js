@@ -1,4 +1,10 @@
 
+0.20.3 / 2016-06-18
+===================
+
+  * switching to bluebird internally (fixes #62)
+  * cleaning up stream code for better error-handling
+
 0.20.2 / 2016-06-17
 ===================
 
