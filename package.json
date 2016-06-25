@@ -41,6 +41,7 @@
     "querystring-es3": "^0.2.1",
     "readable-stream": "^2.0.4",
     "resolve": "^1.1.7",
+    "sort-by": "^1.1.1",
     "stream-array": "^1.1.2",
     "stream-browserify": "^2.0.1",
     "stream-http": "^2.0.2",

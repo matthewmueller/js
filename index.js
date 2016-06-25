@@ -15,6 +15,7 @@ let Promise = require('bluebird')
 let pump = require('pump')
 let readable = require('string-to-stream')
 let resolve = require('resolve')
+let sortBy = require('sort-by')
 let streamify = require('stream-array')
 let syntax = require('syntax-error')
 let values = require('object-values')
@@ -198,7 +199,7 @@ module.exports = function (options) {
       build.tree.removeFile(file)
     } else {
       debug('packing %s', relative(file.path))
-      let mapping = sort(values(initMapping(file, dep)))
+      let mapping = values(initMapping(file, dep)).sort(sortBy('path'))
       yield doPack(file, mapping, file.base, config)
 
       if (bundle) {
@@ -206,7 +207,7 @@ module.exports = function (options) {
         if (!build.tree.findFile(bundlePath)) {
           let file = build.tree.addFile(bundlePath)
           debug('packing bundle %s', relative(file.path))
-          let mapping = sort(values(bundle))
+          let mapping = values(bundle).sort(sortBy('path'))
           yield doPack(file, mapping, file.base, config)
         }
       }
@@ -257,18 +258,6 @@ function extend () {
   var sources = [].slice.call(arguments)
   var args = [ Object.create(null) ].concat(sources)
   return Object.assign.apply(null, args)
-}
-
-/**
- * Sort the dependencies
- *
- * @param {Array} deps  The deps to sort. (with id props)
- * @return {Array}
- */
-function sort (deps) {
-  return deps.sort(function (a, b) {
-    return a.id < b.id ? -1 : 1
-  })
 }
 
 /**
