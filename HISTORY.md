@@ -1,4 +1,10 @@
 
+0.21.3 / 2016-06-25
+===================
+
+  * injecting __filename and __dirname for non-browser builds
+  * sorting deps by path instead of id
+
 0.21.2 / 2016-06-25
 ===================
 
