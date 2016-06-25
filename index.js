@@ -51,7 +51,7 @@ const defaults = {
  */
 module.exports = function (options) {
   debug('initialize %j', options)
-  let config = extend(defaults, options)
+  let config = Object.assign({}, defaults, options)
 
   return function (mako) {
     mako.postread('json', json)
@@ -111,7 +111,7 @@ module.exports = function (options) {
     // traverse dependencies
     yield Promise.map(deps, function (dep) {
       return Promise.fromCallback(function (done) {
-        let options = extend(config.resolveOptions, {
+        let options = Object.assign({}, config.resolveOptions, {
           filename: file.path,
           basedir: file.dirname,
           extensions: flatten([ '.js', '.json', config.extensions ]),
@@ -246,18 +246,6 @@ module.exports = function (options) {
     if (dep) file.mapping[dep.id] = dep
     return file.mapping
   }
-}
-
-/**
- * Helper for generating objects. The returned value is always a fresh object
- * with all arguments assigned as sources.
- *
- * @return {Object}
- */
-function extend () {
-  var sources = [].slice.call(arguments)
-  var args = [ Object.create(null) ].concat(sources)
-  return Object.assign.apply(null, args)
 }
 
 /**
