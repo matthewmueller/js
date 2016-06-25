@@ -14,14 +14,13 @@ let path = require('path')
 let Promise = require('bluebird')
 let pump = require('pump')
 let readable = require('string-to-stream')
+let relative = require('relative')
 let resolve = require('resolve')
 let sortBy = require('sort-by')
 let streamify = require('stream-array')
 let syntax = require('syntax-error')
 let values = require('object-values')
 
-const pwd = process.cwd()
-const relative = abs => path.relative(pwd, abs)
 const bundles = new WeakMap()
 
 // default plugin configuration
