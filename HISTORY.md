@@ -1,4 +1,12 @@
 
+0.21.2 / 2016-06-25
+===================
+
+  * fixing case where resolve failed for non-browser case (fixes #70)
+  * update readme with browser and checkSyntax
+  * allow disabling the syntax check hook
+  * chore(package): update mako-serve to version 0.13.0
+
 0.21.1 / 2016-06-25
 ===================
 
