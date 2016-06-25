@@ -1,6 +1,7 @@
 'use strict'
 
 let bpack = require('browser-pack')
+let bresolve = require('browser-resolve')
 let builtins = require('./lib/builtins')
 let concat = require('concat-stream')
 let convert = require('convert-source-map')
@@ -13,7 +14,7 @@ let path = require('path')
 let Promise = require('bluebird')
 let pump = require('pump')
 let readable = require('string-to-stream')
-let resolve = require('browser-resolve')
+let resolve = require('resolve')
 let streamify = require('stream-array')
 let syntax = require('syntax-error')
 let values = require('object-values')
@@ -24,6 +25,7 @@ const bundles = new WeakMap()
 
 // default plugin configuration
 const defaults = {
+  browser: true,
   bundle: false,
   detectiveOptions: null,
   extensions: [],
@@ -94,9 +96,10 @@ module.exports = function (options) {
    */
   function * npm (file, build) {
     let timer = build.time('js:resolve')
+    let resolver = config.browser ? bresolve : resolve
 
     // include node globals and environment variables
-    file.contents = yield postprocess(file, build.tree.root)
+    if (config.browser) file.contents = yield postprocess(file, build.tree.root)
 
     file.deps = Object.create(null)
     let deps = detective(file.contents, config.detectiveOptions)
@@ -113,14 +116,16 @@ module.exports = function (options) {
         })
 
         debug('resolving %s from %s', dep, relative(file.path))
-        resolve(dep, options, function (err, res, pkg) {
+        resolver(dep, options, function (err, res, pkg) {
           if (err) return done(err)
           debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path))
           file.pkg = pkg
-          let depFile = build.tree.findFile(res)
-          if (!depFile) depFile = build.tree.addFile(res)
-          file.deps[dep] = depFile.id
-          file.addDependency(depFile)
+          if (!resolve.isCore(res)) {
+            let depFile = build.tree.findFile(res)
+            if (!depFile) depFile = build.tree.addFile(res)
+            file.deps[dep] = depFile.id
+            file.addDependency(depFile)
+          }
           done()
         })
       })

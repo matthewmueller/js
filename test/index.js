@@ -224,6 +224,23 @@ describe('js plugin', function () {
   })
 
   context('with options', function () {
+    context('.browser', function () {
+      it('should bundle node-compatible scripts when set to false', function () {
+        let entry = fixture('no-browser/index.js')
+
+        return mako()
+          .use(plugins({ browser: false }))
+          .build(entry)
+          .then(function (build) {
+            let file = build.tree.findFile(entry)
+            // wrap our code so we can pass a valid require fn to the eval'd script
+            let code = `(function (require) {\nreturn ${file.contents.toString()}\n})`
+            // just check that we got an array from fs.readdirSync
+            assert.isArray(vm.runInThisContext(code)(require)(file.id))
+          })
+      })
+    })
+
     context('.extensions', function () {
       it('should allow resolving the extra extensions', function () {
         let entry = fixture('extensions/index.js')
