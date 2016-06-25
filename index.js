@@ -112,6 +112,7 @@ module.exports = function (options) {
       return Promise.fromCallback(function (done) {
         let options = extend(config.resolveOptions, {
           filename: file.path,
+          basedir: file.dirname,
           extensions: flatten([ '.js', '.json', config.extensions ]),
           modules: builtins
         })
