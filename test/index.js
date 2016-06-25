@@ -241,6 +241,15 @@ describe('js plugin', function () {
       })
     })
 
+    context('.checkSyntax', function () {
+      it('should now throw for syntax errors in JS files', function () {
+        let entry = fixture('syntax-error/index.js')
+        let builder = mako().use(plugins({ checkSyntax: false }))
+
+        return builder.build(entry)
+      })
+    })
+
     context('.extensions', function () {
       it('should allow resolving the extra extensions', function () {
         let entry = fixture('extensions/index.js')

@@ -27,6 +27,7 @@ const bundles = new WeakMap()
 const defaults = {
   browser: true,
   bundle: false,
+  checkSyntax: true,
   detectiveOptions: null,
   extensions: [],
   resolveOptions: null,
@@ -53,7 +54,7 @@ module.exports = function (options) {
 
   return function (mako) {
     mako.postread('json', json)
-    mako.predependencies('js', check)
+    if (config.checkSyntax) mako.predependencies('js', check)
     mako.dependencies('js', npm)
     mako.postdependencies([ 'js', 'json' ], pack)
     if (config.bundle) mako.precompile(shared)
