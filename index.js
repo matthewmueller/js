@@ -101,7 +101,7 @@ module.exports = function (options) {
     let resolver = config.browser ? bresolve : resolve
 
     // include node globals and environment variables
-    if (config.browser) file.contents = yield postprocess(file, build.tree.root)
+    file.contents = yield postprocess(file, config)
 
     file.deps = Object.create(null)
     let deps = detective(file.contents, config.detectiveOptions)
@@ -263,19 +263,38 @@ function extend () {
 /**
  * Inject node globals and env variables into the JS source code.
  *
- * @param {File} file    The file to process.
- * @param {String} root  The root directory.
+ * @param {File} file      The file to process.
+ * @param {Object} config  The build configuration.
  * @return {Promise}
  */
-function postprocess (file, root) {
+function postprocess (file, config) {
   return new Promise(function (resolve, reject) {
-    pump(
-      readable(file.contents),
-      envify(file.path),
-      insertGlobals(file.path, { basedir: root }),
-      concat(resolve),
-      reject
-    )
+    if (config.browser) {
+      pump(
+        readable(file.contents),
+        envify(file.path),
+        insertGlobals(file.path, { basedir: file.base }),
+        concat(resolve),
+        reject
+      )
+    } else {
+      pump(
+        readable(file.contents),
+        insertGlobals(file.path, {
+          basedir: file.base,
+          vars: {
+            process: null,
+            global: null,
+            'Buffer.isBuffer': null,
+            Buffer: null,
+            __filename: () => JSON.stringify(file.path),
+            __dirname: () => JSON.stringify(file.dirname)
+          }
+        }),
+        concat(resolve),
+        reject
+      )
+    }
   })
 }
 

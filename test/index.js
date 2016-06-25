@@ -236,7 +236,7 @@ describe('js plugin', function () {
             // wrap our code so we can pass a valid require fn to the eval'd script
             let code = `(function (require) {\nreturn ${file.contents.toString()}\n})`
             // just check that we got an array from fs.readdirSync
-            assert.isArray(vm.runInThisContext(code)(require)(file.id))
+            assert.deepEqual(vm.runInThisContext(code)(require)(file.id), [ 'index.js', 'read.js' ])
           })
       })
     })
