@@ -1,4 +1,10 @@
 
+0.21.6 / 2016-06-27
+===================
+
+  * no longer adding pkg data to file object (not used)
+  * removing cwp
+
 0.21.5 / 2016-06-27
 ===================
 
