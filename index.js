@@ -118,13 +118,12 @@ module.exports = function (options) {
         })
 
         debug('resolving %s from %s', dep, relative(file.path))
-        resolver(dep, options, function (err, res, pkg) {
+        resolver(dep, options, function (err, resolved) {
           if (err) return done(err)
-          debug('resolved %s -> %s from %s', dep, relative(res), relative(file.path))
-          file.pkg = pkg
-          if (!resolve.isCore(res)) {
-            let depFile = build.tree.findFile(res)
-            if (!depFile) depFile = build.tree.addFile(res)
+          debug('resolved %s -> %s from %s', dep, relative(resolved), relative(file.path))
+          if (!resolve.isCore(resolved)) {
+            let depFile = build.tree.findFile(resolved)
+            if (!depFile) depFile = build.tree.addFile(resolved)
             file.deps[dep] = depFile.id
             file.addDependency(depFile)
           }
