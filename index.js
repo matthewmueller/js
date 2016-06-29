@@ -18,9 +18,9 @@ let resolve = require('resolve')
 let sortBy = require('sort-by')
 let streamify = require('stream-array')
 let syntax = require('syntax-error')
+let utils = require('mako-utils')
 let values = require('object-values')
 
-const relative = path.relative.bind(path, process.cwd())
 const bundles = new WeakMap()
 
 // default plugin configuration
@@ -104,7 +104,7 @@ module.exports = function (options) {
 
     file.deps = Object.create(null)
     let deps = detective(file.contents, config.detectiveOptions)
-    debug('%d dependencies found for %s:', deps.length, relative(file.path))
+    debug('%d dependencies found for %s:', deps.length, utils.relative(file.path))
     deps.forEach(dep => debug('> %s', dep))
 
     // traverse dependencies
@@ -117,10 +117,10 @@ module.exports = function (options) {
           modules: builtins
         })
 
-        debug('resolving %s from %s', dep, relative(file.path))
+        debug('resolving %s from %s', dep, utils.relative(file.path))
         resolver(dep, options, function (err, resolved) {
           if (err) return done(err)
-          debug('resolved %s -> %s from %s', dep, relative(resolved), relative(file.path))
+          debug('resolved %s -> %s from %s', dep, utils.relative(resolved), utils.relative(file.path))
           if (!resolve.isCore(resolved)) {
             let depFile = build.tree.findFile(resolved)
             if (!depFile) depFile = build.tree.addFile(resolved)
@@ -157,10 +157,10 @@ module.exports = function (options) {
     files.forEach(file => {
       if (file.bundle) return // short-circuit
       if (tree.graph.outDegree(file.id) > 1) {
-        debug('marking %s as shared', relative(file.path))
+        debug('marking %s as shared', utils.relative(file.path))
         file.bundle = true
         file.dependencies({ recursive: true }).forEach(file => {
-          debug('marking %s as shared (implicitly)', relative(file.path))
+          debug('marking %s as shared (implicitly)', utils.relative(file.path))
           file.bundle = true
         })
       }
@@ -177,7 +177,7 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function * pack (file, build) {
-    debug('pack %s', relative(file.path))
+    debug('pack %s', utils.relative(file.path))
     let timer = build.time('js:pack')
     let root = isRoot(file)
     let dep = prepare(file)
@@ -196,7 +196,7 @@ module.exports = function (options) {
     if (!root) {
       build.tree.removeFile(file)
     } else {
-      debug('packing %s', relative(file.path))
+      debug('packing %s', utils.relative(file.path))
       let mapping = values(initMapping(file, dep)).sort(sortBy('path'))
       yield doPack(file, mapping, file.base, config)
 
@@ -204,7 +204,7 @@ module.exports = function (options) {
         let bundlePath = path.resolve(file.base, config.bundle)
         if (!build.tree.findFile(bundlePath)) {
           let file = build.tree.addFile(bundlePath)
-          debug('packing bundle %s', relative(file.path))
+          debug('packing bundle %s', utils.relative(file.path))
           let mapping = values(bundle).sort(sortBy('path'))
           yield doPack(file, mapping, file.base, config)
         }
