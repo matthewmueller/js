@@ -223,6 +223,22 @@ describe('js plugin', function () {
     })
   })
 
+  it('should custom resolve paths for aliasing', function () {
+    let entry = fixture('aliases/index.js')
+
+    return mako({ root: fixture('aliases') })
+      .use(plugins({
+        resolveOptions: {
+          paths: [ fixture('aliases') ]
+        }
+      }))
+      .build(entry)
+      .then(function (build) {
+        let file = build.tree.findFile(entry)
+        assert.strictEqual(exec(file)(file.id), 'shared');
+      })
+  })
+
   context('with options', function () {
     context('.browser', function () {
       it('should bundle node-compatible scripts when set to false', function () {
