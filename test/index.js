@@ -235,7 +235,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.strictEqual(exec(file)(file.id), 'shared');
+        assert.strictEqual(exec(file)(file.id), 'shared')
       })
   })
 
