@@ -1,4 +1,9 @@
 
+0.21.8 / 2016-07-25
+===================
+
+  * properly handle empty files by specifying encoding during streams
+
 0.21.7 / 2016-06-29
 ===================
 
