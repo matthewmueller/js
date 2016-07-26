@@ -123,6 +123,13 @@ describe('js plugin', function () {
       })
   })
 
+  it('should not throw for an empty JS file', function () {
+    let entry = fixture('empty/index.js')
+    let builder = mako().use(plugins())
+
+    return builder.build(entry)
+  })
+
   it('should throw for syntax errors in JS files', function () {
     let entry = fixture('syntax-error/index.js')
     let builder = mako().use(plugins())

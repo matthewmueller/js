@@ -260,7 +260,7 @@ function postprocess (file, config) {
         readable(file.contents),
         envify(file.path),
         insertGlobals(file.path, { basedir: file.base }),
-        concat(resolve),
+        concat({ encoding: 'buffer' }, resolve),
         reject
       )
     } else {
@@ -277,7 +277,7 @@ function postprocess (file, config) {
             __dirname: () => JSON.stringify(file.dirname)
           }
         }),
-        concat(resolve),
+        concat({ encoding: 'buffer' }, resolve),
         reject
       )
     }
@@ -331,7 +331,7 @@ function runBrowserPack (mapping, root, options) {
     pump(
       streamify(mapping),
       bpack(Object.assign({ basedir: root, raw: true }, options)),
-      concat(resolve),
+      concat({ encoding: 'buffer' }, resolve),
       reject
     )
   })
