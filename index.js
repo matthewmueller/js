@@ -28,8 +28,10 @@ const defaults = {
   browser: true,
   bundle: false,
   checkSyntax: true,
+  core: null,
   detectiveOptions: null,
   extensions: [],
+  modules: null,
   resolveOptions: null,
   sourceMaps: false,
   sourceRoot: 'file://mako'
@@ -53,6 +55,7 @@ module.exports = function (options) {
   let config = Object.assign({}, defaults, options)
 
   return function (mako) {
+    if (config.core) customCoreModules(config.core)
     mako.postread('json', json)
     if (config.checkSyntax) mako.predependencies('js', check)
     mako.dependencies('js', npm)
@@ -114,7 +117,7 @@ module.exports = function (options) {
           filename: file.path,
           basedir: file.dirname,
           extensions: flatten([ '.js', '.json', config.extensions ]),
-          modules: builtins
+          modules: Object.assign({}, builtins, config.modules)
         })
 
         debug('resolving %s from %s', dep, utils.relative(file.path))
@@ -347,4 +350,15 @@ function runBrowserPack (mapping, root, options) {
 function getBundle (tree) {
   if (!bundles.has(tree)) bundles.set(tree, Object.create(null))
   return bundles.get(tree)
+}
+
+/**
+ * Add the given list of modules to the core module list for resolve.
+ *
+ * @param {Array} modules  A list of module IDs.
+ */
+function customCoreModules (modules) {
+  modules.forEach(function (id) {
+    resolve.core[id] = true
+  })
 }
