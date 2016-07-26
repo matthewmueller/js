@@ -1,4 +1,9 @@
 
+0.21.9 / 2016-07-25
+===================
+
+  * adding core/modules to config to customize resolve
+
 0.21.8 / 2016-07-25
 ===================
 
