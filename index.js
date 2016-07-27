@@ -370,6 +370,6 @@ function customCoreModules (modules) {
  * @param {File} file  The input file.
  * @return {String}
  */
-function relativeInitial(file) {
+function relativeInitial (file) {
   return path.relative(file.base, file.initialPath)
 }
