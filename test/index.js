@@ -24,7 +24,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.isTrue(exec(file)(file.id))
+        assert.isTrue(exec(file)(file.relative))
       })
   })
 
@@ -36,7 +36,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.isTrue(exec(file)(file.id))
+        assert.isTrue(exec(file)(file.relative))
       })
   })
 
@@ -48,7 +48,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.isTrue(exec(file)(file.id))
+        assert.isTrue(exec(file)(file.relative))
       })
   })
 
@@ -60,7 +60,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.isTrue(exec(file)(file.id))
+        assert.isTrue(exec(file)(file.relative))
       })
   })
 
@@ -72,7 +72,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.strictEqual(exec(file)(file.id), '.js')
+        assert.strictEqual(exec(file)(file.relative), '.js')
       })
   })
 
@@ -84,7 +84,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        let exported = exec(file)(file.id)
+        let exported = exec(file)(file.relative)
         assert.strictEqual(exported.global.test, 'test')
         assert.strictEqual(exported.Buffer.name, Buffer.name)
         assert.strictEqual(exported.isBuffer.name, Buffer.isBuffer.name)
@@ -99,7 +99,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.strictEqual(exec(file)(file.id), 'test')
+        assert.strictEqual(exec(file)(file.relative), 'test')
         delete process.env.TEST
       })
   })
@@ -119,7 +119,7 @@ describe('js plugin', function () {
       .then(function (build) {
         let file = build.tree.findFile(fixture('subentries/index.js'))
         // assert.include(file.contents.toString(), '{},["test/fixtures/subentries/index.js"]);')
-        assert.strictEqual(exec(file)(file.id), 'nested')
+        assert.strictEqual(exec(file)(file.relative), 'nested')
       })
   })
 
@@ -149,7 +149,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.strictEqual(exec(file)(file.id), 'hi from a text file!')
+        assert.strictEqual(exec(file)(file.relative), 'hi from a text file!')
       })
   })
 
@@ -165,7 +165,7 @@ describe('js plugin', function () {
 
     return runner.build(entry).then(function (build) {
       let file = build.tree.findFile(dep)
-      assert.strictEqual(exec(file)(file.id), 42)
+      assert.strictEqual(exec(file)(file.relative), 42)
     })
   })
 
@@ -188,9 +188,9 @@ describe('js plugin', function () {
         .build(entries)
         .then(function (build) {
           let a = build.tree.findFile(entries[0])
-          assert.strictEqual(exec(a)(a.id), 4)
+          assert.strictEqual(exec(a)(a.relative), 4)
           let b = build.tree.findFile(entries[1])
-          assert.strictEqual(exec(b)(b.id), 5)
+          assert.strictEqual(exec(b)(b.relative), 5)
         })
     })
   })
@@ -203,7 +203,7 @@ describe('js plugin', function () {
         .build(entry)
         .then(function (build) {
           let file = build.tree.findFile(entry)
-          assert.isTrue(exec(file)(file.id))
+          assert.isTrue(exec(file)(file.relative))
         })
     })
 
@@ -214,7 +214,7 @@ describe('js plugin', function () {
         .build(entry)
         .then(function (build) {
           let file = build.tree.findFile(entry)
-          assert.strictEqual(exec(file)(file.id), 'a')
+          assert.strictEqual(exec(file)(file.relative), 'a')
         })
     })
 
@@ -225,7 +225,7 @@ describe('js plugin', function () {
         .build(entry)
         .then(function (build) {
           let file = build.tree.findFile(entry)
-          assert.strictEqual(exec(file)(file.id), 'a')
+          assert.strictEqual(exec(file)(file.relative), 'a')
         })
     })
   })
@@ -242,7 +242,7 @@ describe('js plugin', function () {
       .build(entry)
       .then(function (build) {
         let file = build.tree.findFile(entry)
-        assert.strictEqual(exec(file)(file.id), 'shared')
+        assert.strictEqual(exec(file)(file.relative), 'shared')
       })
   })
 
@@ -259,7 +259,7 @@ describe('js plugin', function () {
             // wrap our code so we can pass a valid require fn to the eval'd script
             let code = `(function (require) {\nreturn ${file.contents.toString()}\n})`
             // just check that we got an array from fs.readdirSync
-            assert.deepEqual(vm.runInThisContext(code)(require)(file.id), [ 'index.js', 'read.js' ])
+            assert.deepEqual(vm.runInThisContext(code)(require)(file.relative), [ 'index.js', 'read.js' ])
           })
       })
     })
@@ -283,7 +283,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (build) {
             let file = build.tree.findFile(entry)
-            assert.isTrue(exec(file)(file.id))
+            assert.isTrue(exec(file)(file.relative))
           })
       })
 
@@ -296,7 +296,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (build) {
             let file = build.tree.findFile(entry)
-            assert.isTrue(exec(file)(file.id))
+            assert.isTrue(exec(file)(file.relative))
           })
       })
     })
@@ -310,7 +310,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (build) {
             let file = build.tree.findFile(entry)
-            assert.isTrue(exec(file)(file.id))
+            assert.isTrue(exec(file)(file.relative))
           })
       })
     })
@@ -323,7 +323,7 @@ describe('js plugin', function () {
           .build(entry)
           .then(function (build) {
             let code = build.tree.findFile(entry)
-            assert.strictEqual(exec(code)(code.id), 4)
+            assert.strictEqual(exec(code)(code.relative), 4)
           })
       })
 
@@ -402,8 +402,8 @@ describe('js plugin', function () {
             let b = build.tree.findFile(fixture('bundle/b.js'))
             let ctx = vm.createContext()
             exec(shared, ctx)
-            assert.strictEqual(exec(a, ctx)(a.id), 4)
-            assert.strictEqual(exec(b, ctx)(b.id), 5)
+            assert.strictEqual(exec(a, ctx)(a.relative), 4)
+            assert.strictEqual(exec(b, ctx)(b.relative), 5)
           })
       })
 
@@ -422,8 +422,8 @@ describe('js plugin', function () {
             let b = build.tree.findFile(fixture('bundle-deep/b.js'))
             let ctx = vm.createContext()
             exec(shared, ctx)
-            assert.strictEqual(exec(a, ctx)(a.id), 8)
-            assert.strictEqual(exec(b, ctx)(b.id), 9)
+            assert.strictEqual(exec(a, ctx)(a.relative), 8)
+            assert.strictEqual(exec(b, ctx)(b.relative), 9)
           })
       })
     })

@@ -127,7 +127,7 @@ module.exports = function (options) {
           if (!resolve.isCore(resolved)) {
             let depFile = build.tree.findFile(resolved)
             if (!depFile) depFile = build.tree.addFile(resolved)
-            file.deps[dep] = depFile.id
+            file.deps[dep] = relativeInitial(depFile)
             file.addDependency(depFile)
           }
           done()
@@ -186,7 +186,7 @@ module.exports = function (options) {
     let dep = prepare(file)
 
     let bundle = config.bundle ? getBundle(build.tree) : null
-    if (file.bundle) bundle[file.id] = dep
+    if (file.bundle) bundle[relativeInitial(file)] = dep
 
     // remove the dependency links for the direct dependants and merge their
     // mappings as we roll up
@@ -225,11 +225,12 @@ module.exports = function (options) {
    * @return {Object}
    */
   function prepare (file) {
+    let relative = relativeInitial(file)
     return {
-      id: file.id,
+      id: relative,
       deps: file.deps || {},
       source: file.contents.toString(),
-      sourceFile: config.sourceMaps ? file.relative : null,
+      sourceFile: config.sourceMaps ? relative : null,
       entry: isRoot(file)
     }
   }
@@ -361,4 +362,14 @@ function customCoreModules (modules) {
   modules.forEach(function (id) {
     resolve.core[id] = true
   })
+}
+
+/**
+ * Helper for retrieving the initialPath in relative form.
+ *
+ * @param {File} file  The input file.
+ * @return {String}
+ */
+function relativeInitial(file) {
+  return path.relative(file.base, file.initialPath)
 }
