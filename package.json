@@ -64,7 +64,7 @@
     "mako-buffer": "^0.11.1",
     "mako-copy": "^0.12.0",
     "mako-output": "^0.11.0",
-    "mako-serve": "^0.13.0",
+    "mako-serve": "^0.14.0",
     "mako-sourcemaps": "^0.4.0",
     "mako-stat": "^0.11.0",
     "mako-write": "^0.10.0",
