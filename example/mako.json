@@ -3,8 +3,8 @@
   "plugins": [
     [ "mako-stat", [ "html", "js" ] ],
     [ "mako-buffer", "js" ],
-    [ "..", { "sourceMaps": true, "root": ".." } ],
-    [ "mako-sourcemaps", "js", { "inline": true } ],
+    [ "..", { "sourceMaps": true } ],
+    [ "mako-sourcemaps", "js" ],
     [ "mako-output", [ "html", "js", "map" ] ],
     [ "mako-copy", "html" ],
     [ "mako-write", [ "js", "map" ] ]
