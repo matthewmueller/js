@@ -69,7 +69,7 @@
     "mako-stat": "^0.11.0",
     "mako-write": "^0.10.0",
     "mocha": "^3.0.0",
-    "standard": "^7.1.2",
+    "standard": "^8.0.0",
     "uid": "0.0.2"
   },
   "scripts": {
