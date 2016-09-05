@@ -1,4 +1,10 @@
 
+0.22.0 / 2016-09-05
+===================
+
+  * update mako core, removing internal timers
+  * chore(package): update mako-serve to version 0.15.0 (#79)
+
 0.21.12 / 2016-08-31
 ====================
 
