@@ -85,9 +85,7 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function check (file, build) {
-    let timer = build.time('js:syntax')
     var err = syntax(file.contents.toString(), file.path)
-    timer()
     if (err) throw err
   }
 
@@ -99,7 +97,6 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function * npm (file, build) {
-    let timer = build.time('js:resolve')
     let resolver = config.browser ? bresolve : resolve
 
     // include node globals and environment variables
@@ -134,8 +131,6 @@ module.exports = function (options) {
         })
       })
     })
-
-    timer()
   }
 
   /**
@@ -151,7 +146,6 @@ module.exports = function (options) {
    * @param {Build} build  The current build.
    */
   function shared (build) {
-    let timer = build.time('js:bundle')
     let tree = build.tree
 
     let files = tree.getFiles()
@@ -168,8 +162,6 @@ module.exports = function (options) {
         })
       }
     })
-
-    timer()
   }
 
   /**
@@ -181,7 +173,6 @@ module.exports = function (options) {
    */
   function * pack (file, build) {
     debug('pack %s', utils.relative(file.path))
-    let timer = build.time('js:pack')
     let root = isRoot(file)
     let dep = prepare(file)
 
@@ -213,8 +204,6 @@ module.exports = function (options) {
         }
       }
     }
-
-    timer()
   }
 
   /**
