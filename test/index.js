@@ -4,11 +4,10 @@
 
 let chai = require('chai')
 let convert = require('convert-source-map')
+let fs = require('fs')
 let js = require('..')
 let mako = require('mako')
 let path = require('path')
-let stat = require('mako-stat')
-let buffer = require('mako-buffer')
 let vm = require('vm')
 
 chai.use(require('chai-as-promised'))
@@ -277,7 +276,7 @@ describe('js plugin', function () {
       it('should allow resolving the extra extensions', function () {
         let entry = fixture('extensions/index.js')
         return mako()
-          .use([ stat('es'), buffer('es') ])
+          .use(buffer('es'))
           .postread('es', file => { file.type = 'js' })
           .use(plugins({ extensions: [ '.es' ] }))
           .build(entry)
@@ -290,7 +289,7 @@ describe('js plugin', function () {
       it('should allow flatten the specified list', function () {
         let entry = fixture('extensions/index.js')
         return mako()
-          .use([ stat('es'), buffer('es') ])
+          .use(buffer('es'))
           .postread('es', file => { file.type = 'js' })
           .use(plugins({ extensions: '.es' }))
           .build(entry)
@@ -451,8 +450,25 @@ function exec (file, ctx) {
  */
 function plugins (options) {
   return [
-    stat([ 'js', 'json' ]),
     buffer([ 'js', 'json' ]),
     js(options)
   ]
+}
+
+/**
+ * Read files from disk.
+ *
+ * @param {Array} extensions  List of extensions to process.
+ * @return {Function} plugin
+ */
+function buffer (extensions) {
+  return function (mako) {
+    mako.read(extensions, function (file, build, done) {
+      fs.readFile(file.path, function (err, buf) {
+        if (err) return done(err)
+        file.contents = buf
+        done()
+      })
+    })
+  }
 }

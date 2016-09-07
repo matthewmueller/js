@@ -61,13 +61,6 @@
     "istanbul": "^0.4.3",
     "istanbul-coveralls": "^1.0.3",
     "mako": "^0.13.0",
-    "mako-buffer": "^0.12.0",
-    "mako-copy": "^0.13.0",
-    "mako-output": "^0.12.0",
-    "mako-serve": "^0.16.1",
-    "mako-sourcemaps": "^0.5.0",
-    "mako-stat": "^0.12.0",
-    "mako-write": "^0.11.0",
     "mocha": "^3.0.0",
     "standard": "^8.0.0",
     "uid": "0.0.2"
@@ -76,8 +69,7 @@
     "lint": "standard",
     "pretest": "npm run lint",
     "test": "istanbul cover _mocha",
-    "coveralls": "istanbul-coveralls",
-    "start": "cd example && mako-serve"
+    "coveralls": "istanbul-coveralls"
   },
   "standard": {
     "ignore": [
