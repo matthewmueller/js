@@ -1,3 +1,4 @@
+
 'use strict'
 
 let bpack = require('browser-pack')
