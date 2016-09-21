@@ -69,7 +69,10 @@
     "lint": "standard",
     "pretest": "npm run lint",
     "test": "istanbul cover _mocha",
-    "coveralls": "istanbul-coveralls"
+    "coveralls": "istanbul-coveralls",
+    "preversion": "npm test",
+    "version": "git-changelog -t $npm_package_version && git add HISTORY.md",
+    "postversion": "git push && git push --tags"
   },
   "standard": {
     "ignore": [
