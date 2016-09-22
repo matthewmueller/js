@@ -7,6 +7,7 @@
 [![coverage][coveralls-badge]][coveralls]
 [![npm dependencies][david-badge]][david]
 [![npm dev dependencies][david-dev-badge]][david-dev]
+[![nsp status][nsp-badge]][nsp]
 [![code style][standard-badge]][standard]
 
 ## Purpose
@@ -35,20 +36,22 @@ Create a new plugin instance, with the following `options` available:
  - `sourceRoot` specifies the path used as the source map root (default: `"mako://"`)
 
 
-[mako]: https://github.com/makojs/core
-[mako-sourcemaps]: https://github.com/makojs/sourcemaps
-[resolve]: https://www.npmjs.com/package/resolve
 [browser-resolve]: https://www.npmjs.com/package/browser-resolve
-[detective]: https://www.npmjs.com/package/detective
-[coveralls]: https://coveralls.io/github/makojs/js
 [coveralls-badge]: https://img.shields.io/coveralls/makojs/js.svg
-[david]: https://david-dm.org/makojs/js
+[coveralls]: https://coveralls.io/github/makojs/js
 [david-badge]: https://img.shields.io/david/makojs/js.svg
-[david-dev]: https://david-dm.org/makojs/js#info=devDependencies
 [david-dev-badge]: https://img.shields.io/david/dev/makojs/js.svg
-[npm]: https://www.npmjs.com/package/mako-js
+[david-dev]: https://david-dm.org/makojs/js#info=devDependencies
+[david]: https://david-dm.org/makojs/js
+[detective]: https://www.npmjs.com/package/detective
+[mako-sourcemaps]: https://github.com/makojs/sourcemaps
+[mako]: https://github.com/makojs/core
 [npm-badge]: https://img.shields.io/npm/v/mako-js.svg
-[standard]: http://standardjs.com/
+[npm]: https://www.npmjs.com/package/mako-js
+[nsp-badge]: https://nodesecurity.io/orgs/mako/projects/3127eda3-004e-46f2-b0d5-39e49c675fcf/badge
+[nsp]: https://nodesecurity.io/orgs/mako/projects/3127eda3-004e-46f2-b0d5-39e49c675fcf
+[resolve]: https://www.npmjs.com/package/resolve
 [standard-badge]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
-[travis]: https://travis-ci.org/makojs/js
+[standard]: http://standardjs.com/
 [travis-badge]: https://img.shields.io/travis/makojs/js.svg
+[travis]: https://travis-ci.org/makojs/js
