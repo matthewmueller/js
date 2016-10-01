@@ -79,5 +79,8 @@
       "test/fixtures/**",
       "example/**"
     ]
+  },
+  "greenkeeper": {
+    "label": "chore"
   }
 }
