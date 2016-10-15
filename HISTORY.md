@@ -1,4 +1,9 @@
 
+1.1.0 / 2016-10-15
+==================
+
+  * fix: handle circular dependencies more gracefully (#91)
+
 1.0.0 / 2016-09-21
 ==================
 
