@@ -227,6 +227,18 @@ describe('js plugin', function () {
           assert.strictEqual(exec(file)(file.relative), 'a')
         })
     })
+
+    it('should work with sshpk', function () {
+      this.timeout('10s')
+      let entry = fixture('circular-deps-4/index.js')
+      return mako({ root: fixture('circular-deps-4') })
+        .use(plugins())
+        .build(entry)
+        .then(function (build) {
+          let file = build.tree.findFile(entry)
+          assert.doesNotThrow(() => exec(file)(file.relative))
+        })
+    })
   })
 
   it('should custom resolve paths for aliasing', function () {
@@ -463,7 +475,7 @@ function plugins (options) {
  */
 function buffer (extensions) {
   return function (mako) {
-    mako.read(extensions, function (file, build, done) {
+    mako.read(extensions, function buffer (file, build, done) {
       fs.readFile(file.path, function (err, buf) {
         if (err) return done(err)
         file.contents = buf

@@ -22,8 +22,6 @@ let syntax = require('syntax-error')
 let utils = require('mako-utils')
 let values = require('object-values')
 
-const bundles = new WeakMap()
-
 // default plugin configuration
 const defaults = {
   browser: true,
@@ -60,8 +58,9 @@ module.exports = function (options) {
     mako.postread('json', json)
     if (config.checkSyntax) mako.predependencies('js', check)
     mako.dependencies('js', npm)
-    mako.postdependencies([ 'js', 'json' ], pack)
     if (config.bundle) mako.precompile(shared)
+    mako.precompile(mapping)
+    mako.postdependencies([ 'js', 'json' ], pack)
   }
 
   /**
@@ -152,58 +151,87 @@ module.exports = function (options) {
     let files = tree.getFiles()
       .filter(file => file.type === 'js' || file.type === 'json')
 
-    files.forEach(file => {
-      if (file.bundle) return // short-circuit
-      if (tree.graph.outDegree(file.id) > 1) {
-        debug('marking %s as shared', utils.relative(file.path))
-        file.bundle = true
-        file.dependencies({ recursive: true }).forEach(file => {
-          debug('marking %s as shared (implicitly)', utils.relative(file.path))
-          file.bundle = true
-        })
+    for (const file of files) {
+      if (file.bundle) continue // short-circuit
+
+      const degree = tree.graph.outDegree(file.id)
+      if (degree <= 1) continue // not a candidate for bundling
+
+      debug('shared by %d files: %s', degree, utils.relative(file.path))
+      file.bundle = true
+
+      for (const dependency of file.dependencies({ recursive: true })) {
+        if (dependency.bundle) continue // already known
+
+        debug('> %s', utils.relative(dependency.path))
+        dependency.bundle = true
       }
-    })
+    }
   }
 
   /**
-   * Mako prewrite hook that packs all JS entry files into a single file. (also
-   * removes all dependencies from the build tree)
+   * This precompile plugin has the following responsibilities:
+   *
+   *  - generate browser-pack mappings for JS sub-trees
+   *  - when bundling is enabled
+   *     - identify candidates for bundling
+   *     - add shared bundle to dependency tree
+   *
+   * @param {Build} build  The current build.
+   */
+  function * mapping (build) {
+    const tree = build.tree
+    const entries = tree.getFiles().filter(isRoot)
+    const bundle = config.bundle ? Object.create(null) : null
+
+    for (const entry of entries) {
+      debug('generating mapping for %s', utils.relative(entry.path))
+      const mapping = Object.create(null)
+
+      mapping[entry.id] = prepare(entry)
+      for (const dependency of entry.dependencies({ recursive: true })) {
+        if (dependency.bundle) {
+          debug('bundled dependency %s', utils.relative(dependency.path))
+          bundle[dependency.id] = prepare(dependency)
+        } else {
+          debug('dependency %s', utils.relative(dependency.path))
+          mapping[dependency.id] = prepare(dependency)
+        }
+      }
+
+      entry.mapping = mapping
+    }
+
+    if (bundle) {
+      const bundlePath = path.resolve(tree.root, config.bundle)
+      debug('adding shared bundle to tree %s', utils.relative(bundlePath))
+
+      const file = build.tree.addFile({
+        path: bundlePath,
+        mapping: bundle
+      })
+
+      entries.forEach(entry => entry.addDependency(file))
+    }
+  }
+
+  /**
+   * This postdependencies handler has the following responsibilities:
+   *
+   *  - removing non-output js/json files (any without a dependency mapping)
+   *  - packing files with a mapping via browser-pack
    *
    * @param {File} file    The current file being processed.
    * @param {Build} build  The current build.
    */
   function * pack (file, build) {
-    debug('pack %s', utils.relative(file.path))
-    let root = isRoot(file)
-    let dep = prepare(file)
+    file.dependants().forEach(parent => parent.removeDependency(file))
 
-    let bundle = config.bundle ? getBundle(build.tree) : null
-    if (file.bundle) bundle[relativeInitial(file)] = dep
-
-    // remove the dependency links for the direct dependants and merge their
-    // mappings as we roll up
-    file.dependants().forEach(function (parent) {
-      Object.assign(initMapping(parent, bundle ? null : dep), file.mapping)
-      build.tree.removeDependency(parent, file)
-    })
-
-    // only leave the entry files behind
-    if (!root) {
-      build.tree.removeFile(file)
-    } else {
+    if (file.mapping) {
       debug('packing %s', utils.relative(file.path))
-      let mapping = values(initMapping(file, dep)).sort(sortBy('path'))
-      yield doPack(file, mapping, file.base, config)
-
-      if (bundle) {
-        let bundlePath = path.resolve(file.base, config.bundle)
-        if (!build.tree.findFile(bundlePath)) {
-          let file = build.tree.addFile(bundlePath)
-          debug('packing bundle %s', utils.relative(file.path))
-          let mapping = values(bundle).sort(sortBy('path'))
-          yield doPack(file, mapping, file.base, config)
-        }
-      }
+      yield doPack(file, values(file.mapping).sort(sortBy('path')), file.base, config)
+    } else {
+      build.tree.removeFile(file)
     }
   }
 
@@ -223,20 +251,6 @@ module.exports = function (options) {
       sourceFile: config.sourceMaps ? relative : null,
       entry: isRoot(file)
     }
-  }
-
-  /**
-   * Helper for initializing a browserify-compatible file mapping. (without
-   * clobbering an existing one)
-   *
-   * @param {File} file   The file object to add a mapping property to.
-   * @param {Object} dep  The mapping entry to initialize with.
-   * @return {Object}     The new/existing mapping.
-   */
-  function initMapping (file, dep) {
-    if (!file.mapping) file.mapping = Object.create(null)
-    if (dep) file.mapping[dep.id] = dep
-    return file.mapping
   }
 }
 
@@ -286,6 +300,9 @@ function postprocess (file, config) {
  * @return {Boolean}
  */
 function isRoot (file) {
+  // only js files can be roots
+  if (file.type !== 'js') return false
+
   // if there are no dependants, this is assumed to be a root
   let dependants = file.dependants()
   if (dependants.length === 0) return true
@@ -329,18 +346,6 @@ function runBrowserPack (mapping, root, options) {
       reject
     )
   })
-}
-
-/**
- * Uses the build tree as a key for init/getting a bundle mapping. (this works
- * because each assemble has it's own build/tree)
- *
- * @param {Tree} tree  The build tree to use as the key.
- * @return {Object}
- */
-function getBundle (tree) {
-  if (!bundles.has(tree)) bundles.set(tree, Object.create(null))
-  return bundles.get(tree)
 }
 
 /**
