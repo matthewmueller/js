@@ -173,23 +173,27 @@ module.exports = function (options) {
    * This precompile plugin has the following responsibilities:
    *
    *  - generate browser-pack mappings for JS sub-trees
+   *  - remove the dependencies from the tree so they are not iterated later
+   *    by the cycle detector (which is an expensive operation)
    *  - when bundling is enabled
    *     - identify candidates for bundling
    *     - add shared bundle to dependency tree
    *
    * @param {Build} build  The current build.
    */
-  function * mapping (build) {
+  function mapping (build) {
     const tree = build.tree
-    const entries = tree.getFiles().filter(isRoot)
+    const roots = tree.getFiles().filter(isRoot)
     const bundle = config.bundle ? Object.create(null) : null
+    const deps = new Set()
 
-    for (const entry of entries) {
-      debug('generating mapping for %s', utils.relative(entry.path))
+    for (const root of roots) {
+      debug('generating mapping for %s', utils.relative(root.path))
       const mapping = Object.create(null)
 
-      mapping[entry.id] = prepare(entry)
-      for (const dependency of entry.dependencies({ recursive: true })) {
+      mapping[root.id] = prepare(root)
+      for (const dependency of root.dependencies({ recursive: true })) {
+        deps.add(dependency)
         if (dependency.bundle) {
           debug('bundled dependency %s', utils.relative(dependency.path))
           bundle[dependency.id] = prepare(dependency)
@@ -199,7 +203,11 @@ module.exports = function (options) {
         }
       }
 
-      entry.mapping = mapping
+      root.mapping = mapping
+    }
+
+    for (const dep of deps) {
+      tree.removeFile(dep, { force: true })
     }
 
     if (bundle) {
@@ -211,7 +219,7 @@ module.exports = function (options) {
         mapping: bundle
       })
 
-      entries.forEach(entry => entry.addDependency(file))
+      roots.forEach(root => root.addDependency(file))
     }
   }
 
