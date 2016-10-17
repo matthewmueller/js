@@ -1,4 +1,9 @@
 
+1.1.1 / 2016-10-16
+==================
+
+  * perf: remove dependencies from tree to eliminate expensive cycle detection
+
 1.1.0 / 2016-10-15
 ==================
 
