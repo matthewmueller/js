@@ -1,7 +1,9 @@
 sudo: false
 language: node_js
 node_js:
-  - stable
+  - 7
+  - 6
+  - 5
   - 4
 install:
   - npm prune
@@ -19,4 +21,4 @@ deploy:
   on:
     tags: true
     repo: makojs/js
-    node: stable
+    node: 6
