@@ -8,13 +8,12 @@ let concat = require('concat-stream')
 let convert = require('convert-source-map')
 let debug = require('debug')('mako-js')
 let detective = require('detective')
-let envify = require('loose-envify')
+let envify = require('loose-envify/replace')
+let globals = require('./lib/globals')
 let flatten = require('array-flatten')
-let insertGlobals = require('insert-module-globals')
 let path = require('path')
 let Promise = require('bluebird')
 let pump = require('pump')
-let readable = require('string-to-stream')
 let resolve = require('resolve')
 let sortBy = require('sort-by')
 let streamify = require('stream-array')
@@ -271,32 +270,26 @@ module.exports = function (options) {
  */
 function postprocess (file, config) {
   return new Promise(function (resolve, reject) {
+    let src = file.contents.toString()
+    src = envify(src, [ process.env ])
+
     if (config.browser) {
-      pump(
-        readable(file.contents),
-        envify(file.path),
-        insertGlobals(file.path, { basedir: file.base }),
-        concat({ encoding: 'buffer' }, resolve),
-        reject
-      )
+      src = globals(src, file.path, { basedir: file.base })
     } else {
-      pump(
-        readable(file.contents),
-        insertGlobals(file.path, {
-          basedir: file.base,
-          vars: {
-            process: null,
-            global: null,
-            'Buffer.isBuffer': null,
-            Buffer: null,
-            __filename: () => JSON.stringify(file.path),
-            __dirname: () => JSON.stringify(file.dirname)
-          }
-        }),
-        concat({ encoding: 'buffer' }, resolve),
-        reject
-      )
+      src = globals(src, file.path, {
+        basedir: file.base,
+        vars: {
+          process: null,
+          global: null,
+          'Buffer.isBuffer': null,
+          Buffer: null,
+          __filename: () => JSON.stringify(file.path),
+          __dirname: () => JSON.stringify(file.dirname)
+        }
+      })
     }
+
+    return resolve(new Buffer(src))
   })
 }
 
